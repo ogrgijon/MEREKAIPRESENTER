@@ -169,6 +169,14 @@ npm run build:renderer
 npm run build:panel
 ```
 
+## Reproductor en Raspberry Pi
+
+Para convertir una Raspberry Pi en un reproductor a pantalla completa con su
+propio punto de acceso Wi-Fi, consulta la [guía del reproductor en Raspberry
+Pi](readme/raspberry-pi.md). Incluye la instalación, la configuración del
+punto de acceso, el acceso remoto al panel, el inicio con systemd y el modo
+kiosco de Chromium.
+
 ## Estructura del proyecto
 
 ```text

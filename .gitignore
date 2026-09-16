@@ -7,6 +7,9 @@ out/
 # Internal working notes and agent prompts
 /prompts/
 /readme/
+!/readme/
+/readme/*
+!/readme/raspberry-pi.md
 
 # Local configuration and credentials
 .env

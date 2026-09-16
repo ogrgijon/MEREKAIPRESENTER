@@ -150,6 +150,13 @@ npm run build:renderer
 npm run build:panel
 ```
 
+## Raspberry Pi player
+
+To turn a Raspberry Pi into a fullscreen player with its own Wi-Fi hotspot,
+see the [Raspberry Pi player guide](readme/raspberry-pi.md). It covers
+installation, hotspot setup, remote control-panel access, systemd startup,
+and Chromium kiosk mode.
+
 ## Project structure
 
 ```text
