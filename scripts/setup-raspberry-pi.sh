@@ -57,6 +57,12 @@ if ! command -v node >/dev/null 2>&1 || [[ "$(node -p 'process.versions.node.spl
     sudo apt-get install -y nodejs
 fi
 
+if ! command -v npm >/dev/null 2>&1; then
+    log "Installing npm"
+    sudo apt-get update
+    sudo apt-get install -y npm
+fi
+
 require_command npm
 require_command node
 

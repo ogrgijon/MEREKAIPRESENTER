@@ -33,11 +33,12 @@ sudo apt update
 sudo apt install -y git chromium network-manager curl
 ```
 
-Install Node.js 20 or newer. This also installs the matching `npm` command:
+Install Node.js 20 or newer. Raspberry Pi OS may package `npm` separately, so
+install both packages explicitly:
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
+sudo apt install -y nodejs npm
 ```
 
 Confirm the versions:
@@ -52,6 +53,15 @@ nmcli --version
 The `node --version` output must be `v20` or newer before continuing. If Node.js
 20 or newer is already installed, skip the NodeSource commands and only verify
 that both `node` and `npm` are available.
+
+If npm was installed while a terminal was already open, refresh its command
+cache or open a new terminal before retrying:
+
+```bash
+hash -r
+command -v npm
+npm --version
+```
 
 ## 2. Install Merekai Presenter
 
