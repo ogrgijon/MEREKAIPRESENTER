@@ -10,6 +10,10 @@ import Busboy from "busboy";
 import path from "node:path";
 
 import {
+    homedir,
+} from "node:os";
+
+import {
     createReadStream,
     existsSync,
     mkdirSync,
@@ -65,7 +69,7 @@ const APP_NAME = "merekaipresenter";
 const USER_HOME =
     process.env.HOME ||
     process.env.USERPROFILE ||
-    process.cwd();
+    homedir();
 
 function isRaspberryPi(): boolean {
     if (process.platform !== "linux") {
@@ -168,9 +172,11 @@ function fileBrowserRoots(): string[] {
     const home = USER_HOME;
     const roots = [
         home,
+        "/media",
+        "/run/media",
+        "/mnt",
         path.join("/media", process.env.USER || ""),
         path.join("/run/media", process.env.USER || ""),
-        "/mnt",
     ];
 
     return Array.from(new Set(roots)).filter(

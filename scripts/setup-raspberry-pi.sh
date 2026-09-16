@@ -218,11 +218,26 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now merekai-presenter.service
 
 log "Saving the media folder in application settings"
-curl --fail --silent --show-error --retry 10 --retry-delay 1 \
+server_ready=false
+for attempt in {1..60}; do
+    if curl --fail --silent --max-time 2 \
+        "http://${PLAYER_HOST}:${DEFAULT_PORT}/player/" >/dev/null; then
+        server_ready=true
+        break
+    fi
+    sleep 1
+done
+
+if [[ "$server_ready" != true ]]; then
+    sudo systemctl --no-pager --full status merekai-presenter.service || true
+    fail "The presenter server did not become ready on ${PLAYER_HOST}:${DEFAULT_PORT}. Check: sudo journalctl -u merekai-presenter.service -n 100"
+fi
+
+curl --fail --silent --show-error \
     --max-time 5 \
     -H 'Content-Type: application/json' \
     --data "$(node -p 'JSON.stringify({ folder: process.argv[1] })' "$media_dir")" \
-    "http://${DEFAULT_HOST}:${DEFAULT_PORT}/api/set-media-folder" >/dev/null
+    "http://${PLAYER_HOST}:${DEFAULT_PORT}/api/set-media-folder" >/dev/null
 
 log "Configuring Chromium kiosk autostart"
 autostart_dir="$service_home/.config/autostart"
