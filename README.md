@@ -177,5 +177,4 @@ ignored by the repository's `.gitignore`.
 
 ## License
 
-No license has been selected for this repository yet. Until one is added,
-standard copyright rules apply and reuse should be treated as unauthorized.
+This project is licensed under the [MIT License](LICENSE).

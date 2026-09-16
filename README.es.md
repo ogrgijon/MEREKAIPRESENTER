@@ -197,6 +197,4 @@ datos locales ni registros. Las notas internas de trabajo de `prompts/` y
 
 ## Licencia
 
-Este repositorio todavía no tiene una licencia seleccionada. Hasta que se
-añada una, se aplican las normas habituales de derechos de autor y la
-reutilización debe considerarse no autorizada.
+Este proyecto se distribuye bajo la [licencia MIT](LICENSE).
