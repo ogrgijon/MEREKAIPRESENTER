@@ -177,7 +177,10 @@ Pi](readme/raspberry-pi.md). Incluye la instalación, la configuración del
 punto de acceso, el acceso remoto al panel, el inicio con systemd y el modo
 kiosco de Chromium.
 
-La guía también incluye un asistente interactivo de configuración:
+La guía también incluye un asistente interactivo de configuración. Instala las
+herramientas de red que falten, configura el punto de acceso, guarda la carpeta
+de medios, instala el servicio y crea el inicio automático de Chromium en modo
+kiosco:
 
 ```bash
 bash scripts/setup-raspberry-pi.sh

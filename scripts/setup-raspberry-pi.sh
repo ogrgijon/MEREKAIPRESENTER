@@ -30,10 +30,22 @@ require_command() {
 [[ "$(id -u)" -ne 0 ]] || fail "Run this wizard as the desktop user, not with sudo. It uses sudo when needed."
 
 require_command sudo
-require_command nmcli
 require_command systemctl
 require_command npm
 require_command node
+
+if command -v apt-get >/dev/null 2>&1 && {
+    ! command -v nmcli >/dev/null 2>&1 ||
+    ! command -v curl >/dev/null 2>&1 ||
+    { ! command -v chromium >/dev/null 2>&1 && ! command -v chromium-browser >/dev/null 2>&1; }
+}; then
+    log "Installing Raspberry Pi networking prerequisites"
+    sudo apt-get update
+    sudo apt-get install -y network-manager curl chromium
+fi
+
+require_command nmcli
+require_command curl
 
 node_major="$(node -p 'process.versions.node.split(".")[0]')"
 [[ "$node_major" -ge 20 ]] || fail "Node.js 20 or newer is required; found $(node --version)."
@@ -135,9 +147,8 @@ else
         ipv6.method disabled
 fi
 
-if confirm "Activate the hotspot now? This may disconnect the current Wi-Fi connection."; then
-    sudo nmcli connection up "$DEFAULT_CONNECTION"
-fi
+confirm "Activate the hotspot now? This may disconnect the current Wi-Fi connection." || fail "The hotspot must be activated before the server can start."
+sudo nmcli connection up "$DEFAULT_CONNECTION"
 
 log "Installing the systemd service"
 service_file="$(mktemp)"
@@ -164,6 +175,13 @@ EOF
 sudo install -o root -g root -m 644 "$service_file" /etc/systemd/system/merekai-presenter.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now merekai-presenter.service
+
+log "Saving the media folder in application settings"
+curl --fail --silent --show-error --retry 10 --retry-delay 1 \
+    --max-time 5 \
+    -H 'Content-Type: application/json' \
+    --data "$(node -p 'JSON.stringify({ folder: process.argv[1] })' "$media_dir")" \
+    "http://${DEFAULT_HOST}:${DEFAULT_PORT}/api/set-media-folder" >/dev/null
 
 log "Configuring Chromium kiosk autostart"
 autostart_dir="$service_home/.config/autostart"

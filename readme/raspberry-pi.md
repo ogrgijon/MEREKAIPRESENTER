@@ -16,19 +16,20 @@ For an interactive setup, run the included wizard from the repository root:
 bash scripts/setup-raspberry-pi.sh
 ```
 
-The wizard asks for the hotspot details and Pi paths, then configures the
-hotspot, builds the application, installs the server service, and creates the
-Chromium kiosk autostart entry. The manual steps below explain what it changes
-and are useful when adapting the setup.
+The wizard asks for the hotspot details and Pi paths, then installs missing
+networking tools, configures the hotspot, builds the application, saves the
+media folder in application settings, installs the server service, and creates
+the Chromium kiosk autostart entry. The manual steps below explain what it
+changes and are useful when adapting the setup.
 
 ## 1. Install the Pi prerequisites
 
 Connect the Pi to the Internet temporarily, then install Node.js 20 or newer,
-Chromium, Git, and NetworkManager:
+Chromium, Git, NetworkManager, and curl:
 
 ```bash
 sudo apt update
-sudo apt install -y git chromium network-manager
+sudo apt install -y git chromium network-manager curl
 ```
 
 Confirm the versions:
@@ -183,7 +184,8 @@ journalctl -u merekai-presenter.service -f
 1. Connect a laptop or phone to the `Merekai Presenter` Wi-Fi network.
 2. Open `http://10.42.0.1:3131/` and confirm the control panel loads.
 3. Confirm the Pi display shows `http://127.0.0.1:3131/player/` fullscreen.
-4. In Settings, select `/home/<pi-user>/media` if it is not already selected.
+4. Confirm that the configured media folder is shown in Settings. The wizard
+  saves it automatically; the manual setup requires selecting it there.
 5. Add media and confirm play, pause, next, overlays, and ordering from the
    remote control panel.
 
