@@ -6,9 +6,8 @@ and opens the player in Chromium kiosk mode. A laptop, tablet, or phone
 connected to the hotspot opens the control panel.
 
 The commands below target Raspberry Pi OS Bookworm or newer with a desktop
-environment and NetworkManager. Replace `<pi-user>` with the Linux username on
-the Pi. Do not use this setup on an untrusted network: the application has no
-authentication.
+environment. Replace `<pi-user>` with the Linux username on the Pi. Do not use
+this setup on an untrusted network: the application has no authentication.
 
 For an interactive setup, run the included wizard from the repository root:
 
@@ -16,16 +15,18 @@ For an interactive setup, run the included wizard from the repository root:
 bash scripts/setup-raspberry-pi.sh
 ```
 
-The wizard asks for the hotspot details and Pi paths, then installs missing
-networking tools, configures the hotspot, builds the application, saves the
-media folder in application settings, installs the server service, and creates
-the Chromium kiosk autostart entry. The manual steps below explain what it
-changes and are useful when adapting the setup.
+The wizard installs missing Debian packages and Node.js 20+, asks for the
+hotspot details and Pi paths, then configures the hotspot, builds the
+application, saves the media folder in application settings, installs the
+server service, creates the Chromium kiosk autostart entry, and offers to
+enable desktop autologin and disable display blanking. The manual steps below
+explain what it changes and are useful when adapting the setup.
 
 ## 1. Install the Pi prerequisites
 
-Connect the Pi to the Internet temporarily, then install Node.js 20 or newer,
-Chromium, Git, NetworkManager, and curl:
+Connect the Pi to the Internet temporarily. The wizard installs Node.js 20 or
+newer, Chromium, Git, NetworkManager, and curl automatically. For a manual
+installation, run:
 
 ```bash
 sudo apt update

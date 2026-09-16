@@ -158,8 +158,8 @@ installation, hotspot setup, remote control-panel access, systemd startup,
 and Chromium kiosk mode.
 
 The guide also includes an interactive setup runner. It installs missing
-networking tools, configures the hotspot, saves the media folder, installs the
-server service, and creates Chromium kiosk autostart:
+system packages and Node.js 20+, configures the hotspot, saves the media
+folder, installs the server service, and creates Chromium kiosk autostart:
 
 ```bash
 bash scripts/setup-raspberry-pi.sh

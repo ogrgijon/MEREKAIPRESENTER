@@ -30,22 +30,35 @@ require_command() {
 [[ "$(id -u)" -ne 0 ]] || fail "Run this wizard as the desktop user, not with sudo. It uses sudo when needed."
 
 require_command sudo
-require_command systemctl
-require_command npm
-require_command node
 
-if command -v apt-get >/dev/null 2>&1 && {
-    ! command -v nmcli >/dev/null 2>&1 ||
-    ! command -v curl >/dev/null 2>&1 ||
-    { ! command -v chromium >/dev/null 2>&1 && ! command -v chromium-browser >/dev/null 2>&1; }
-}; then
-    log "Installing Raspberry Pi networking prerequisites"
+command -v apt-get >/dev/null 2>&1 || fail "This wizard requires a Debian-based Raspberry Pi OS with apt-get."
+
+apt_packages=()
+for package in git network-manager curl chromium; do
+    if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -Fq 'install ok installed'; then
+        apt_packages+=("$package")
+    fi
+done
+
+if ((${#apt_packages[@]} > 0)); then
+    log "Installing Raspberry Pi prerequisites"
     sudo apt-get update
-    sudo apt-get install -y network-manager curl chromium
+    sudo apt-get install -y "${apt_packages[@]}"
 fi
 
+require_command systemctl
 require_command nmcli
 require_command curl
+require_command git
+
+if ! command -v node >/dev/null 2>&1 || [[ "$(node -p 'process.versions.node.split(".")[0]')" -lt 20 ]]; then
+    log "Installing Node.js 20"
+    curl --fail --silent --show-error https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+fi
+
+require_command npm
+require_command node
 
 node_major="$(node -p 'process.versions.node.split(".")[0]')"
 [[ "$node_major" -ge 20 ]] || fail "Node.js 20 or newer is required; found $(node --version)."
@@ -66,7 +79,7 @@ current_home="${HOME:?HOME is not set}"
 default_media_dir="${current_home}/media"
 
 printf '%s\n' "Merekai Presenter Raspberry Pi setup"
-printf '%s\n' "This wizard changes NetworkManager, systemd, and Chromium autostart."
+printf '%s\n' "This wizard changes apt packages, NetworkManager, systemd, and Chromium autostart."
 printf '%s\n' "The control panel has no authentication; use a private hotspot password."
 
 read -r -p "Wi-Fi device [$wifi_device] " input
@@ -198,6 +211,34 @@ X-GNOME-Autostart-enabled=true
 EOF
 sudo install -d -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$autostart_dir"
 sudo install -o "$service_user" -g "$(id -gn "$service_user")" -m 644 "$autostart_tmp" "$autostart_file"
+
+log "Configuring display session"
+if command -v raspi-config >/dev/null 2>&1; then
+    if confirm "Enable Raspberry Pi desktop autologin?"; then
+        sudo raspi-config nonint do_boot_behaviour B4 ||
+            printf '%s\n' "Warning: Raspberry Pi desktop autologin could not be configured automatically."
+    fi
+else
+    printf '%s\n' "raspi-config not found; configure desktop autologin manually if needed."
+fi
+
+session_config_dir="$service_home/.config"
+session_config_file="$session_config_dir/wayfire.ini"
+if [[ -d "$session_config_dir" && -f "$session_config_file" ]]; then
+    if confirm "Disable display blanking in the Wayfire session?"; then
+        if ! grep -Fq '[idle]' "$session_config_file"; then
+            cat > "$autostart_tmp" <<'EOF'
+
+[idle]
+dpms_timeout = -1
+screensaver_timeout = -1
+idle_timeout = -1
+EOF
+            sudo tee -a "$session_config_file" < "$autostart_tmp" >/dev/null
+            sudo chown "$service_user":"$(id -gn "$service_user")" "$session_config_file"
+        fi
+    fi
+fi
 
 log "Setup complete"
 printf '%s\n' "Control panel: http://${DEFAULT_HOST}:${DEFAULT_PORT}/"
