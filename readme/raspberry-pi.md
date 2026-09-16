@@ -143,7 +143,7 @@ Wants=network-online.target
 Type=simple
 User=<pi-user>
 WorkingDirectory=/home/<pi-user>/merekaipresenter
-Environment=HOST=10.42.0.1
+Environment=HOST=0.0.0.0
 Environment=PORT=3131
 Environment=DISPLAY=:0
 Environment=XAUTHORITY=/home/<pi-user>/.Xauthority
@@ -168,7 +168,7 @@ The server log should show:
 
 ```text
 Control panel: http://10.42.0.1:3131/
-Player:        http://10.42.0.1:3131/player/
+Player:        http://127.0.0.1:3131/player/
 ```
 
 From a device connected to the hotspot, open
@@ -198,7 +198,7 @@ cat > /home/<pi-user>/.config/autostart/merekai-player.desktop <<'EOF'
 [Desktop Entry]
 Type=Application
 Name=Merekai Presenter Player
-Exec=chromium --kiosk --noerrdialogs --disable-session-crashed-bubble --check-for-update-interval=31536000 http://127.0.0.1:3131/player/
+Exec=/home/<pi-user>/.local/bin/merekai-player
 Terminal=false
 X-GNOME-Autostart-enabled=true
 EOF
@@ -219,7 +219,7 @@ journalctl -u merekai-presenter.service -f
 
 1. Connect a laptop or phone to the `Merekai Presenter` Wi-Fi network.
 2. Open `http://10.42.0.1:3131/` and confirm the control panel loads.
-3. Confirm the Pi display shows `http://127.0.0.1:3131/player/` fullscreen.
+3. Confirm the Pi display shows the local player fullscreen. The kiosk launcher waits for `http://127.0.0.1:3131/player/` and does not depend on a remote client opening the control panel.
 4. Confirm that the configured media folder is shown in Settings. The wizard
   saves it automatically; the manual setup requires selecting it there.
 5. Add media and confirm play, pause, next, overlays, and ordering from the

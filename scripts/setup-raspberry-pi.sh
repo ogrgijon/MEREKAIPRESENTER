@@ -4,6 +4,8 @@ set -Eeuo pipefail
 
 readonly DEFAULT_HOST="10.42.0.1"
 readonly DEFAULT_PORT="3131"
+readonly SERVER_BIND_HOST="0.0.0.0"
+readonly PLAYER_HOST="127.0.0.1"
 readonly DEFAULT_CONNECTION="merekai-hotspot"
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly APP_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
@@ -182,7 +184,7 @@ Wants=network-online.target
 Type=simple
 User=$service_user
 WorkingDirectory=$app_dir
-Environment=HOST=$DEFAULT_HOST
+Environment=HOST=$SERVER_BIND_HOST
 Environment=PORT=$DEFAULT_PORT
 Environment=DISPLAY=:0
 Environment=XAUTHORITY=$service_home/.Xauthority
@@ -207,13 +209,26 @@ curl --fail --silent --show-error --retry 10 --retry-delay 1 \
 log "Configuring Chromium kiosk autostart"
 autostart_dir="$service_home/.config/autostart"
 autostart_file="$autostart_dir/merekai-player.desktop"
+player_bin_dir="$service_home/.local/bin"
+player_launcher="$player_bin_dir/merekai-player"
 autostart_tmp="$(mktemp)"
-trap 'rm -f "$service_file" "$autostart_tmp"' EXIT
+player_launcher_tmp="$(mktemp)"
+trap 'rm -f "$service_file" "$autostart_tmp" "$player_launcher_tmp"' EXIT
+cat > "$player_launcher_tmp" <<EOF
+#!/usr/bin/env bash
+set -eu
+until curl --fail --silent "http://${PLAYER_HOST}:${DEFAULT_PORT}/player/" >/dev/null; do
+    sleep 1
+done
+exec "$chromium_command" --kiosk --noerrdialogs --disable-session-crashed-bubble --check-for-update-interval=31536000 "http://${PLAYER_HOST}:${DEFAULT_PORT}/player/"
+EOF
+sudo install -d -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$player_bin_dir"
+sudo install -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$player_launcher_tmp" "$player_launcher"
 cat > "$autostart_tmp" <<EOF
 [Desktop Entry]
 Type=Application
 Name=Merekai Presenter Player
-Exec=$chromium_command --kiosk --noerrdialogs --disable-session-crashed-bubble --check-for-update-interval=31536000 http://127.0.0.1:${DEFAULT_PORT}/player/
+Exec=$player_launcher
 Terminal=false
 X-GNOME-Autostart-enabled=true
 EOF
@@ -250,6 +265,6 @@ fi
 
 log "Setup complete"
 printf '%s\n' "Control panel: http://${DEFAULT_HOST}:${DEFAULT_PORT}/"
-printf '%s\n' "Player:        http://127.0.0.1:${DEFAULT_PORT}/player/"
+printf '%s\n' "Player:        http://${DEFAULT_HOST}:${DEFAULT_PORT}/player/"
 printf '%s\n' "Media folder:  $media_dir"
 printf '%s\n' "Reboot the Pi to test Chromium kiosk autostart."

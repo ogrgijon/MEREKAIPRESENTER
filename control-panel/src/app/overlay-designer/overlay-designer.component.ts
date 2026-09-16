@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, debounceTime, forkJoin, takeUntil } from 'rxjs';
 import { ApiService, OverlayLayer } from '../services/api.service';
@@ -182,6 +183,7 @@ interface OverlayPreviewContext {
     FormsModule,
     MatButtonModule,
     MatSlideToggleModule,
+    MatSelectModule,
   ],
   templateUrl: './overlay-designer.component.html',
   styleUrl: './overlay-designer.component.scss',
@@ -212,6 +214,7 @@ export class OverlayDesignerComponent implements OnInit, AfterViewInit, OnDestro
   bodyBackgroundColor = '#000000';
   autosaveLabel = '';
   autosaveDirty = false;
+  libraryFiles: string[] = [];
 
   private readonly destroy$ = new Subject<void>();
   private readonly autosave$ = new Subject<void>();
@@ -231,9 +234,11 @@ export class OverlayDesignerComponent implements OnInit, AfterViewInit, OnDestro
     forkJoin({
       layers: this.api.getOverlays(),
       settings: this.api.getSettings(),
-    }).subscribe(({ layers, settings }) => {
+      media: this.api.getMediaOrder(),
+    }).subscribe(({ layers, settings, media }) => {
       this.designerLayers = layers.map((layer) => this.createDesignerLayer(layer));
       this.bodyBackgroundColor = this.normalizeColorInput(settings['bodyBackgroundColor'], '#000000');
+      this.libraryFiles = media.files.filter((file) => /\.(jpg|jpeg|png|gif|webp)$/i.test(file));
       if (this.designerLayers.length === 0) this.addLayer('text');
       this.loaded = true;
       setTimeout(() => this.initializeStageObserver());
@@ -469,12 +474,9 @@ export class OverlayDesignerComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   browseImage(layer: DesignerLayer): void {
-    this.api.pickFileNative().subscribe(({ path }) => {
-      if (path) {
-        layer.source = path;
-        this.queueAutosave();
-      }
-    });
+    if (this.libraryFiles.length === 0) {
+      this.snackBar.open(this.i18n.t('settings.libraryEmpty'), this.i18n.t('ok'), { duration: 3000 });
+    }
   }
 
   isTextLayer(layer: DesignerLayer): boolean {
