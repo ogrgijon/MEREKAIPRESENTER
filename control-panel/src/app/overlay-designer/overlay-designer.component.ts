@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Subject, debounceTime, forkJoin, takeUntil } from 'rxjs';
+import { Subject, catchError, debounceTime, forkJoin, of, takeUntil } from 'rxjs';
 import { ApiService, OverlayLayer } from '../services/api.service';
 import { I18nService } from '../services/i18n.service';
 
@@ -232,9 +232,9 @@ export class OverlayDesignerComponent implements OnInit, AfterViewInit, OnDestro
       .subscribe(() => this.persistChanges(true));
 
     forkJoin({
-      layers: this.api.getOverlays(),
-      settings: this.api.getSettings(),
-      media: this.api.getMediaOrder(),
+      layers: this.api.getOverlays().pipe(catchError(() => of([] as OverlayLayer[]))),
+      settings: this.api.getSettings().pipe(catchError(() => of({} as Record<string, string>))),
+      media: this.api.getMediaOrder().pipe(catchError(() => of({ files: [], order: [], hidden: [] }))),
     }).subscribe(({ layers, settings, media }) => {
       this.designerLayers = layers.map((layer) => this.createDesignerLayer(layer));
       this.bodyBackgroundColor = this.normalizeColorInput(settings['bodyBackgroundColor'], '#000000');

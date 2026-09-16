@@ -46,6 +46,17 @@ export interface UploadResponse {
   rejected: string[];
 }
 
+export interface FileBrowserEntry {
+  name: string;
+  path: string;
+  type: 'directory' | 'file';
+}
+
+export interface FileBrowserResponse {
+  path: string | null;
+  entries: FileBrowserEntry[];
+}
+
 // Talks to the local Node http server that hosts both the control panel and the player.
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -86,6 +97,11 @@ export class ApiService {
 
   pickFileNative(): Observable<{ path: string | null }> {
     return this.http.post<{ path: string | null }>('/api/pick-file', {});
+  }
+
+  browseFiles(path?: string): Observable<FileBrowserResponse> {
+    const query = path ? `?path=${encodeURIComponent(path)}` : '';
+    return this.http.get<FileBrowserResponse>(`/api/file-browser${query}`);
   }
 
   sendPlaybackCommand(command: PlaybackCommand, index?: number): Observable<void> {

@@ -7,7 +7,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ApiService } from '../services/api.service';
+import { ApiService, FileBrowserEntry } from '../services/api.service';
 import { I18nService } from '../services/i18n.service';
 
 type FieldType = 'text' | 'multiline' | 'number' | 'boolean' | 'select';
@@ -142,6 +142,11 @@ export class SettingsComponent implements OnInit {
   libraryFiles: string[] = [];
   loaded = false;
   saving = false;
+  browserOpen = false;
+  browserLoading = false;
+  browserPath = '';
+  browserEntries: FileBrowserEntry[] = [];
+  browserField: FieldDef | null = null;
 
   constructor(private api: ApiService, private snackBar: MatSnackBar, public i18n: I18nService) {}
 
@@ -187,21 +192,69 @@ export class SettingsComponent implements OnInit {
   }
 
   browseFolder(field: FieldDef): void {
-    const pick = field.browse === 'file' ? this.api.pickFileNative() : this.api.pickFolderNative();
-    pick.subscribe({
-      next: ({ path }) => {
-        if (!path) return;
-        if (field.key === 'insertFiles') {
-          const existing = this.values[field.key]?.trim();
-          this.values[field.key] = existing ? `${existing}\n${path}` : path;
-        } else {
-          this.values[field.key] = path;
-        }
+    this.browserField = field;
+    this.browserOpen = true;
+    this.loadBrowserPath();
+  }
+
+  loadBrowserPath(path?: string): void {
+    this.browserLoading = true;
+    this.api.browseFiles(path).subscribe({
+      next: ({ path: loadedPath, entries }) => {
+        this.browserPath = loadedPath ?? '';
+        this.browserEntries = entries;
+        this.browserLoading = false;
       },
       error: () => {
+        this.browserLoading = false;
         this.snackBar.open(this.i18n.t('settings.nativePickerError'), this.i18n.t('ok'), { duration: 3500 });
       },
     });
+  }
+
+  closeBrowser(): void {
+    this.browserOpen = false;
+    this.browserField = null;
+  }
+
+  chooseBrowserEntry(entry: FileBrowserEntry): void {
+    if (entry.type === 'directory') {
+      this.loadBrowserPath(entry.path);
+      return;
+    }
+
+    this.chooseBrowserPath(entry.path);
+  }
+
+  chooseCurrentBrowserFolder(): void {
+    if (this.browserPath) this.chooseBrowserPath(this.browserPath);
+  }
+
+  browserParentPath(): string | undefined {
+    if (!this.browserPath) return undefined;
+
+    const separatorIndex = Math.max(
+      this.browserPath.lastIndexOf('/'),
+      this.browserPath.lastIndexOf('\\'),
+    );
+    if (separatorIndex < 0) return undefined;
+
+    const parent = this.browserPath.slice(0, separatorIndex);
+    return parent || this.browserPath.slice(0, separatorIndex + 1);
+  }
+
+  private chooseBrowserPath(selectedPath: string): void {
+    const field = this.browserField;
+    if (!field) return;
+
+    if (field.key === 'insertFiles') {
+      const existing = this.values[field.key]?.trim();
+      this.values[field.key] = existing ? `${existing}\n${selectedPath}` : selectedPath;
+    } else {
+      this.values[field.key] = selectedPath;
+    }
+
+    this.closeBrowser();
   }
 
   refreshLibraryFiles(): void {

@@ -824,10 +824,6 @@ function showMedia(
                 video.error,
             );
 
-            showMessage(
-                "No se pudo reproducir el video. Saltando al siguiente.",
-            );
-
             next();
         };
 
@@ -875,10 +871,6 @@ async function playVideo(
             video.muted = true;
             await video.play();
 
-            showMessage(
-                "Video reproduciendose sin audio. Pulsa cualquier tecla para habilitar sonido.",
-            );
-
             return;
         } catch (retryError: unknown) {
             console.warn(
@@ -887,10 +879,6 @@ async function playVideo(
             );
         }
     }
-
-    showMessage(
-        "No se pudo iniciar el video. Saltando al siguiente.",
-    );
 
     next();
 }
@@ -920,12 +908,7 @@ function unlockAudioPlayback(): void {
         );
     }
 
-    if (
-        message.textContent ===
-        "Video reproduciendose sin audio. Pulsa cualquier tecla para habilitar sonido."
-    ) {
-        showMessage("");
-    }
+    showMessage("");
 }
 
 // ============================================================

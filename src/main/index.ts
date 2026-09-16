@@ -151,6 +151,59 @@ const VIDEO_REGEX =
 const MEDIA_REGEX =
     /\.(jpg|jpeg|png|gif|webp|mp4|webm)$/i;
 
+interface FileBrowserEntry {
+    name: string;
+    path: string;
+    type: "directory" | "file";
+}
+
+function fileBrowserRoots(): string[] {
+    if (process.platform === "win32") {
+        return Array.from(
+            { length: 26 },
+            (_, index) => `${String.fromCharCode(65 + index)}:\\`,
+        ).filter((drive) => existsSync(drive));
+    }
+
+    const home = USER_HOME;
+    const roots = [
+        home,
+        path.join("/media", process.env.USER || ""),
+        path.join("/run/media", process.env.USER || ""),
+        "/mnt",
+    ];
+
+    return Array.from(new Set(roots)).filter(
+        (root) => root && existsSync(root) && statSync(root).isDirectory(),
+    );
+}
+
+function isAllowedBrowserPath(candidate: string): boolean {
+    const resolved = path.resolve(candidate);
+    return fileBrowserRoots().some((root) => {
+        const resolvedRoot = path.resolve(root);
+        return resolved === resolvedRoot || resolved.startsWith(`${resolvedRoot}${path.sep}`);
+    });
+}
+
+function listFileBrowserEntries(folder: string): FileBrowserEntry[] {
+    if (!isAllowedBrowserPath(folder) || !existsSync(folder) || !statSync(folder).isDirectory()) {
+        throw new Error("Directory is not available");
+    }
+
+    return readdirSync(folder, { withFileTypes: true })
+        .filter((entry) => !entry.name.startsWith("."))
+        .map((entry) => ({
+            name: entry.name,
+            path: path.join(folder, entry.name),
+            type: entry.isDirectory() ? "directory" as const : "file" as const,
+        }))
+        .sort((left, right) => {
+            if (left.type !== right.type) return left.type === "directory" ? -1 : 1;
+            return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+        });
+}
+
 // ============================================================
 // SETTINGS
 // ============================================================
@@ -1910,6 +1963,37 @@ async function handleApi(
                 400,
                 "Invalid media folder",
             );
+        }
+
+        return true;
+    }
+
+    // --------------------------------------------------------
+    // REMOTE FILE BROWSER
+    // --------------------------------------------------------
+
+    if (
+        pathname === "/api/file-browser" &&
+        req.method === "GET"
+    ) {
+        try {
+            const requestedPath = requestUrl.searchParams.get("path");
+            const folder = requestedPath ? path.resolve(requestedPath) : null;
+            const entries = folder
+                ? listFileBrowserEntries(folder)
+                : fileBrowserRoots().map((root) => ({
+                    name: root,
+                    path: root,
+                    type: "directory" as const,
+                }));
+
+            sendJson(res, {
+                path: folder,
+                entries,
+            });
+        } catch (error) {
+            console.error("Error listing remote file browser path:", error);
+            sendError(res, 400, "Unable to list directory");
         }
 
         return true;

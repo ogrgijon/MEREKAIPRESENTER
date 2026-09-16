@@ -176,11 +176,11 @@ From a device connected to the hotspot, open
 choose `/home/<pi-user>/media` in the Settings screen and configure the order,
 overlays, and playback options.
 
-The Browse buttons open a native picker on the Raspberry Pi desktop, not on
-the remote PC or phone. When using the control panel remotely, type the Pi
-filesystem path directly into the field, for example
-`/home/<pi-user>/media`. Use Browse on the Pi desktop when you need to select
-the path visually.
+The Browse button in the remote control panel opens a filesystem browser in
+the client browser. It shows the Pi user's home directory and available
+mounted locations such as removable drives under `/media`, `/run/media`, or
+`/mnt`. Selecting a folder fills the setting with the Raspberry Pi filesystem
+path; the remote computer does not need to have that path locally.
 
 To copy media from another computer without using SSH, open the `Upload`
 tab in the remote control panel. Choose one or more supported files and select

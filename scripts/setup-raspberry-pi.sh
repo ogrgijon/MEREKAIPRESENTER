@@ -221,18 +221,24 @@ autostart_dir="$service_home/.config/autostart"
 autostart_file="$autostart_dir/merekai-player.desktop"
 player_bin_dir="$service_home/.local/bin"
 player_launcher="$player_bin_dir/merekai-player"
+player_log="$service_home/.local/state/merekaipresenter/player-startup.log"
 autostart_tmp="$(mktemp)"
 player_launcher_tmp="$(mktemp)"
 trap 'rm -f "$service_file" "$autostart_tmp" "$player_launcher_tmp"' EXIT
 cat > "$player_launcher_tmp" <<EOF
 #!/usr/bin/env bash
 set -eu
+mkdir -p "$(dirname "$player_log")"
+exec >>"$player_log" 2>&1
+printf '\n[%s] Starting Merekai player launcher\n' "\$(date --iso-8601=seconds)"
 until curl --fail --silent "http://${PLAYER_HOST}:${DEFAULT_PORT}/player/" >/dev/null; do
     sleep 1
 done
+printf '[%s] Server is ready; starting Chromium\n' "\$(date --iso-8601=seconds)"
 exec "$chromium_command" --kiosk --noerrdialogs --disable-session-crashed-bubble --check-for-update-interval=31536000 "http://${PLAYER_HOST}:${DEFAULT_PORT}/player/"
 EOF
 sudo install -d -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$player_bin_dir"
+sudo install -d -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$(dirname "$player_log")"
 sudo install -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$player_launcher_tmp" "$player_launcher"
 cat > "$autostart_tmp" <<EOF
 [Desktop Entry]
@@ -241,6 +247,7 @@ Name=Merekai Presenter Player
 Exec=$player_launcher
 Terminal=false
 X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=10
 EOF
 sudo install -d -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$autostart_dir"
 sudo install -o "$service_user" -g "$(id -gn "$service_user")" -m 644 "$autostart_tmp" "$autostart_file"

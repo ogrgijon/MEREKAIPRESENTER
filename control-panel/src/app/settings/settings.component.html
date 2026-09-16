@@ -139,3 +139,39 @@
     </ng-container>
   </section>
 </form>
+
+<div *ngIf="browserOpen" class="file-browser-backdrop" (click)="closeBrowser()">
+  <section class="file-browser" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('settings.folderBrowser.ariaLabel')" (click)="$event.stopPropagation()">
+    <header class="file-browser-header">
+      <div>
+        <p class="file-browser-eyebrow">{{ i18n.t('settings.folderBrowser.eyebrow') }}</p>
+        <h2>{{ i18n.t('settings.folderBrowser.title') }}</h2>
+        <p class="file-browser-description">{{ i18n.t('settings.folderBrowser.description') }}</p>
+      </div>
+      <button mat-icon-button type="button" aria-label="Close" (click)="closeBrowser()">&times;</button>
+    </header>
+
+    <div class="file-browser-location">
+      <span class="file-browser-location-label">{{ i18n.t('settings.folderBrowser.currentLocation') }}</span>
+      <code>{{ browserPath || i18n.t('settings.folderBrowser.locations') }}</code>
+    </div>
+
+    <div class="file-browser-toolbar">
+      <button mat-stroked-button type="button" (click)="loadBrowserPath()" [disabled]="browserLoading">{{ i18n.t('settings.folderBrowser.allLocations') }}</button>
+      <button mat-stroked-button type="button" (click)="loadBrowserPath(browserParentPath())" [disabled]="!browserParentPath() || browserLoading">{{ i18n.t('settings.folderBrowser.parent') }}</button>
+      <button mat-flat-button color="primary" type="button" (click)="chooseCurrentBrowserFolder()" [disabled]="!browserPath || browserLoading || browserField?.browse === 'file'">{{ i18n.t('settings.folderBrowser.choose') }}</button>
+    </div>
+
+    <div class="file-browser-tree" role="tree" aria-label="Available folders" aria-live="polite">
+      <p *ngIf="browserLoading" class="file-browser-empty">{{ i18n.t('settings.folderBrowser.loading') }}</p>
+      <ng-container *ngFor="let entry of browserEntries">
+        <button *ngIf="browserField?.browse === 'file' || entry.type === 'directory'" type="button" class="file-browser-entry" [class.file-browser-file]="entry.type === 'file'" (click)="chooseBrowserEntry(entry)">
+          <span class="file-browser-folder-icon" aria-hidden="true"></span>
+          <span class="file-browser-entry-name">{{ entry.name }}</span>
+          <span class="file-browser-entry-kind">{{ i18n.t(entry.type === 'directory' ? 'settings.folderBrowser.folder' : 'settings.folderBrowser.file') }}</span>
+        </button>
+      </ng-container>
+      <p *ngIf="!browserLoading && browserEntries.length === 0" class="file-browser-empty">{{ i18n.t('settings.folderBrowser.empty') }}</p>
+    </div>
+  </section>
+</div>
