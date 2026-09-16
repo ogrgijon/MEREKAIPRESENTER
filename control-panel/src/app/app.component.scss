@@ -163,6 +163,10 @@
 
 .lang-toggle { color: var(--nav-accent); }
 
+.access-toggle {
+  color: var(--nav-accent);
+}
+
 .app-toolbar button:focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;

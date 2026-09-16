@@ -1,9 +1,10 @@
 # Raspberry Pi Player
 
 This guide turns a Raspberry Pi connected to an HDMI display into a Merekai
-Presenter player. The Pi creates its own Wi-Fi hotspot, runs the local server,
-and opens the player in Chromium kiosk mode. A laptop, tablet, or phone
-connected to the hotspot opens the control panel.
+Presenter player. The Pi runs the local server and opens the player in
+Chromium kiosk mode. You can use the existing LAN, the private hotspot, or
+both at the same time when the Pi has separate network connectivity (for
+example Ethernet plus the Wi-Fi hotspot).
 
 The commands below target Raspberry Pi OS Bookworm or newer with a desktop
 environment. Replace `<pi-user>` with the Linux username on the Pi. Do not use
@@ -15,12 +16,11 @@ For an interactive setup, run the included wizard from the repository root:
 bash scripts/setup-raspberry-pi.sh
 ```
 
-The wizard installs missing Debian packages and Node.js 20+, asks for the
-hotspot details and Pi paths, then configures the hotspot, builds the
-application, saves the media folder in application settings, installs the
-server service, creates the Chromium kiosk autostart entry, and offers to
-enable desktop autologin and disable display blanking. The manual steps below
-explain what it changes and are useful when adapting the setup.
+The wizard installs missing Debian packages and Node.js 20+, optionally asks
+for hotspot details, then builds the application, saves the media folder in
+application settings, installs the server service, creates the Chromium kiosk
+autostart entry, and offers to enable desktop autologin and disable display
+blanking. It prints every active control-panel URL when it finishes.
 
 The wizard is safe to run again for updates. Before rebuilding, it removes the
 previous Merekai system service and kiosk launcher, then installs them again.
@@ -209,8 +209,10 @@ EOF
 ```
 
 Log out and back in, or reboot the Pi. The display should open the player
-fullscreen after Chromium starts. The control panel remains available from any
-hotspot client at `http://10.42.0.1:3131/`.
+fullscreen after Chromium starts. The control panel is available at the URLs
+printed by the setup wizard. The hotspot URL is
+`http://10.42.0.1:3131/`; the local-network URL uses the Pi's Ethernet or
+router-assigned Wi-Fi address.
 
 To exit kiosk mode during maintenance, press `Alt+F4` or switch to a virtual
 terminal with `Ctrl+Alt+F3`. To inspect the server:
@@ -221,8 +223,9 @@ journalctl -u merekai-presenter.service -f
 
 ## 6. Verify the complete setup
 
-1. Connect a laptop or phone to the `Merekai Presenter` Wi-Fi network.
-2. Open `http://10.42.0.1:3131/` and confirm the control panel loads.
+1. Connect a laptop or phone to the Pi's local network, or to the
+  `Merekai Presenter` Wi-Fi network when the hotspot is enabled.
+2. Open one of the printed control-panel URLs and confirm the panel loads.
 3. Confirm the Pi display shows the local player fullscreen. The kiosk launcher waits for `http://127.0.0.1:3131/player/` and does not depend on a remote client opening the control panel.
 4. Confirm that the configured media folder is shown in Settings. The wizard
   saves it automatically; the manual setup requires selecting it there.

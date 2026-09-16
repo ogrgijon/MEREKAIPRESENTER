@@ -70,6 +70,10 @@ export class ApiService {
     return this.http.post<void>('/api/settings', settings);
   }
 
+  saveAuthentication(username: string, password: string, enabled: boolean): Observable<{ ok: boolean; enabled: boolean; username?: string }> {
+    return this.http.post<{ ok: boolean; enabled: boolean; username?: string }>('/api/auth', { username, password, enabled });
+  }
+
   getMediaOrder(): Observable<MediaOrderResponse> {
     return this.http.get<MediaOrderResponse>('/api/media-order');
   }

@@ -36,6 +36,9 @@
       <mat-icon aria-hidden="true">language</mat-icon>
       <span>{{ i18n.current.toUpperCase() }}</span>
     </button>
+    <button mat-icon-button class="access-toggle" (click)="openAccessDialog()" [title]="i18n.t('security.openDialog')" [attr.aria-label]="i18n.t('security.openDialog')">
+      <mat-icon aria-hidden="true">vpn_key</mat-icon>
+    </button>
   </div>
 </mat-toolbar>
 

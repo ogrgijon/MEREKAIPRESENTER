@@ -147,6 +147,10 @@ export class SettingsComponent implements OnInit {
   browserPath = '';
   browserEntries: FileBrowserEntry[] = [];
   browserField: FieldDef | null = null;
+  authEnabled = false;
+  authUsername = '';
+  authPassword = '';
+  authSaving = false;
 
   constructor(private api: ApiService, private snackBar: MatSnackBar, public i18n: I18nService) {}
 
@@ -360,10 +364,33 @@ export class SettingsComponent implements OnInit {
         this.savedInsertSchedules = this.cloneInsertSchedules(this.insertSchedules);
         this.savedValues = { ...this.sanitizeValues(values), insertSchedules: JSON.stringify(this.insertSchedules) };
         this.values = { ...this.savedValues };
+        this.authEnabled = values['authEnabled'] === 'true';
+        this.authUsername = values['authUsername'] ?? '';
+        this.authPassword = '';
         this.loaded = true;
       },
       error: () => {
         this.snackBar.open('Failed to load settings', 'OK', { duration: 3000 });
+      },
+    });
+  }
+
+  saveAuthentication(): void {
+    if (this.authEnabled && (!this.authUsername.trim() || this.authPassword.length < 4)) {
+      this.snackBar.open(this.i18n.t('security.validation'), this.i18n.t('ok'), { duration: 3500 });
+      return;
+    }
+
+    this.authSaving = true;
+    this.api.saveAuthentication(this.authUsername.trim(), this.authPassword, this.authEnabled).subscribe({
+      next: () => {
+        this.authPassword = '';
+        this.authSaving = false;
+        this.snackBar.open(this.i18n.t('security.saved'), this.i18n.t('ok'), { duration: 4000 });
+      },
+      error: () => {
+        this.authSaving = false;
+        this.snackBar.open(this.i18n.t('security.failed'), this.i18n.t('ok'), { duration: 4000 });
       },
     });
   }

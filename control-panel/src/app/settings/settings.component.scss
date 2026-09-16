@@ -45,6 +45,16 @@
     }
   }
 
+  .security-section {
+    .section-header {
+      grid-column: 1 / -1;
+    }
+
+    button {
+      align-self: center;
+    }
+  }
+
   .preset-section,
   .summary-section {
     display: flex;

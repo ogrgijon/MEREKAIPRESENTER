@@ -58,6 +58,7 @@ require_command systemctl
 require_command nmcli
 require_command curl
 require_command git
+require_command ip
 
 if ! command -v node >/dev/null 2>&1 || [[ "$(node -p 'process.versions.node.split(".")[0]')" -lt 20 ]]; then
     log "Installing Node.js 20"
@@ -86,7 +87,6 @@ else
 fi
 
 wifi_device="$(nmcli -t -f DEVICE,TYPE,STATE device | awk -F: '$2 == "wifi" && $3 != "unavailable" { print $1; exit }')"
-[[ -n "$wifi_device" ]] || fail "No available Wi-Fi device was found. Check nmcli device status."
 
 current_user="$(id -un)"
 current_home="${HOME:?HOME is not set}"
@@ -96,16 +96,21 @@ printf '%s\n' "Merekai Presenter Raspberry Pi setup"
 printf '%s\n' "This wizard changes apt packages, NetworkManager, systemd, and Chromium autostart."
 printf '%s\n' "The control panel has no authentication; use a private hotspot password."
 
-read -r -p "Wi-Fi device [$wifi_device] " input
-wifi_device="${input:-$wifi_device}"
-read -r -p "Hotspot name [Merekai Presenter] " hotspot_name
-hotspot_name="${hotspot_name:-Merekai Presenter}"
-read -r -s -p "Hotspot password (8+ characters) " hotspot_password
-printf '\n'
-[[ "${#hotspot_password}" -ge 8 ]] || fail "The hotspot password must contain at least 8 characters."
-read -r -s -p "Repeat hotspot password " hotspot_password_repeat
-printf '\n'
-[[ "$hotspot_password" == "$hotspot_password_repeat" ]] || fail "The hotspot passwords do not match."
+use_hotspot=false
+if confirm "Configure and use the private Wi-Fi hotspot?"; then
+    [[ -n "$wifi_device" ]] || fail "No available Wi-Fi device was found. Check nmcli device status."
+    use_hotspot=true
+    read -r -p "Wi-Fi device [$wifi_device] " input
+    wifi_device="${input:-$wifi_device}"
+    read -r -p "Hotspot name [Merekai Presenter] " hotspot_name
+    hotspot_name="${hotspot_name:-Merekai Presenter}"
+    read -r -s -p "Hotspot password (8+ characters) " hotspot_password
+    printf '\n'
+    [[ "${#hotspot_password}" -ge 8 ]] || fail "The hotspot password must contain at least 8 characters."
+    read -r -s -p "Repeat hotspot password " hotspot_password_repeat
+    printf '\n'
+    [[ "$hotspot_password" == "$hotspot_password_repeat" ]] || fail "The hotspot passwords do not match."
+fi
 read -r -p "Pi username [$current_user] " input
 service_user="${input:-$current_user}"
 id "$service_user" >/dev/null 2>&1 || fail "Linux user does not exist: $service_user"
@@ -120,14 +125,13 @@ media_dir="${input:-$default_media_dir}"
 cat <<EOF
 
 Configuration:
-  Wi-Fi device:   $wifi_device
-  Hotspot name:   $hotspot_name
-  Hotspot address: $DEFAULT_HOST
+    Network mode:   $([[ "$use_hotspot" == true ]] && printf '%s' "Private hotspot" || printf '%s' "Existing local network")
+    Wi-Fi device:   ${wifi_device:-not configured}
   Pi user:        $service_user
   App directory:  $app_dir
   Media directory: $media_dir
   Player URL:     http://127.0.0.1:${DEFAULT_PORT}/player/
-  Control panel:  http://${DEFAULT_HOST}:${DEFAULT_PORT}/
+    Control panel:  available on the active LAN address at port ${DEFAULT_PORT}
 EOF
 
 confirm "Apply this configuration?" || fail "Cancelled."
@@ -156,8 +160,9 @@ log "Installing application dependencies and building"
     npm run build
 )
 
-log "Configuring the Wi-Fi hotspot"
-if nmcli -t -f NAME connection show | grep -Fxq "$DEFAULT_CONNECTION"; then
+if [[ "$use_hotspot" == true ]]; then
+    log "Configuring the Wi-Fi hotspot"
+    if nmcli -t -f NAME connection show | grep -Fxq "$DEFAULT_CONNECTION"; then
     sudo nmcli connection modify "$DEFAULT_CONNECTION" \
         connection.interface-name "$wifi_device" \
         802-11-wireless.ssid "$hotspot_name" \
@@ -170,12 +175,12 @@ if nmcli -t -f NAME connection show | grep -Fxq "$DEFAULT_CONNECTION"; then
         ipv4.addresses "${DEFAULT_HOST}/24" \
         ipv6.method disabled \
         connection.autoconnect yes
-else
-    sudo nmcli connection add type wifi ifname "$wifi_device" \
+    else
+        sudo nmcli connection add type wifi ifname "$wifi_device" \
         con-name "$DEFAULT_CONNECTION" \
         autoconnect yes \
         ssid "$hotspot_name"
-    sudo nmcli connection modify "$DEFAULT_CONNECTION" \
+        sudo nmcli connection modify "$DEFAULT_CONNECTION" \
         802-11-wireless.mode ap \
         802-11-wireless.band bg \
         802-11-wireless.channel 6 \
@@ -184,10 +189,11 @@ else
         ipv4.method shared \
         ipv4.addresses "${DEFAULT_HOST}/24" \
         ipv6.method disabled
-fi
+    fi
 
-confirm "Activate the hotspot now? This may disconnect the current Wi-Fi connection." || fail "The hotspot must be activated before the server can start."
-sudo nmcli connection up "$DEFAULT_CONNECTION"
+    confirm "Activate the hotspot now? This may disconnect the current Wi-Fi connection." || fail "The hotspot must be activated before the server can start."
+    sudo nmcli connection up "$DEFAULT_CONNECTION"
+fi
 
 log "Installing the systemd service"
 service_file="$(mktemp)"
@@ -238,6 +244,17 @@ curl --fail --silent --show-error \
     -H 'Content-Type: application/json' \
     --data "$(node -p 'JSON.stringify({ folder: process.argv[1] })' "$media_dir")" \
     "http://${PLAYER_HOST}:${DEFAULT_PORT}/api/set-media-folder" >/dev/null
+
+log "Access URLs"
+lan_addresses="$(ip -4 -o addr show scope global | awk '{ split($4, address, "/"); print address[1] }')"
+if [[ "$use_hotspot" == true ]]; then
+    printf '%s\n' "Hotspot control panel: http://${DEFAULT_HOST}:${DEFAULT_PORT}/"
+fi
+while IFS= read -r lan_address; do
+    [[ -n "$lan_address" ]] || continue
+    [[ "$lan_address" == "$DEFAULT_HOST" ]] && continue
+    printf '%s\n' "Local network control panel: http://${lan_address}:${DEFAULT_PORT}/"
+done <<< "$lan_addresses"
 
 log "Configuring Chromium kiosk autostart"
 autostart_dir="$service_home/.config/autostart"
@@ -321,7 +338,11 @@ EOF
 fi
 
 log "Setup complete"
-printf '%s\n' "Control panel: http://${DEFAULT_HOST}:${DEFAULT_PORT}/"
-printf '%s\n' "Player:        http://${DEFAULT_HOST}:${DEFAULT_PORT}/player/"
+lan_address="$(hostname -I 2>/dev/null | awk '{print $1}')"
+if [[ "$use_hotspot" == true ]]; then
+    lan_address="$DEFAULT_HOST"
+fi
+printf '%s\n' "Control panel: http://${lan_address:-127.0.0.1}:${DEFAULT_PORT}/"
+printf '%s\n' "Player:        http://127.0.0.1:${DEFAULT_PORT}/player/"
 printf '%s\n' "Media folder:  $media_dir"
 printf '%s\n' "Reboot the Pi to test Chromium kiosk autostart."

@@ -42,6 +42,28 @@
     </div>
   </section>
 
+  <section class="settings-section security-section">
+    <div class="section-header">
+      <h3>{{ i18n.t('security.title') }}</h3>
+      <p>{{ i18n.t('security.description') }}</p>
+    </div>
+    <mat-slide-toggle [checked]="authEnabled" (change)="authEnabled = $event.checked" [disabled]="authSaving">
+      {{ i18n.t('security.enabled') }}
+    </mat-slide-toggle>
+    <mat-form-field appearance="outline">
+      <mat-label>{{ i18n.t('security.username') }}</mat-label>
+      <input matInput [(ngModel)]="authUsername" name="authUsername" [disabled]="!authEnabled || authSaving">
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>{{ i18n.t('security.password') }}</mat-label>
+      <input matInput type="password" [(ngModel)]="authPassword" name="authPassword" [disabled]="!authEnabled || authSaving" autocomplete="new-password">
+      <mat-hint>{{ i18n.t('security.passwordHint') }}</mat-hint>
+    </mat-form-field>
+    <button mat-flat-button color="primary" type="button" (click)="saveAuthentication()" [disabled]="authSaving || (authEnabled && (!authUsername.trim() || authPassword.length < 8))">
+      {{ i18n.t('security.save') }}
+    </button>
+  </section>
+
   <section *ngFor="let section of sections" class="settings-section">
     <div class="section-header">
       <h3>{{ i18n.t(section.title) }}</h3>

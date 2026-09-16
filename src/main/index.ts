@@ -38,6 +38,11 @@ import {
 } from "node:child_process";
 
 import {
+    createHash,
+    timingSafeEqual,
+} from "node:crypto";
+
+import {
     finished,
 } from "node:stream/promises";
 
@@ -267,6 +272,11 @@ const SETTINGS_KEYS = [
     "overlayLayers",
 ] as const;
 
+const AUTH_USERNAME_KEY = "authUsername";
+const AUTH_PASSWORD_HASH_KEY = "authPasswordHash";
+const DEFAULT_AUTH_USERNAME = "user";
+const DEFAULT_AUTH_PASSWORD = "1234";
+
 type SettingKey =
     (typeof SETTINGS_KEYS)[number];
 
@@ -357,6 +367,13 @@ async function initDb(): Promise<void> {
         )
     `);
 
+    if (!getSetting(AUTH_USERNAME_KEY)) {
+        setSetting(AUTH_USERNAME_KEY, DEFAULT_AUTH_USERNAME);
+    }
+    if (!getSetting(AUTH_PASSWORD_HASH_KEY)) {
+        setSetting(AUTH_PASSWORD_HASH_KEY, hashPassword(DEFAULT_AUTH_PASSWORD));
+    }
+
     saveDb();
 }
 
@@ -432,7 +449,60 @@ function getAllSettings(): Record<string, string> {
                 : getSetting(key) ?? "";
     }
 
+    values[AUTH_USERNAME_KEY] = getSetting(AUTH_USERNAME_KEY) ?? "";
+    values["authEnabled"] = getSetting(AUTH_PASSWORD_HASH_KEY) ? "true" : "false";
+
     return values;
+}
+
+function hashPassword(password: string): string {
+    return createHash("sha256")
+        .update(password, "utf8")
+        .digest("hex");
+}
+
+function isAuthenticated(req: IncomingMessage): boolean {
+    const storedHash = getSetting(AUTH_PASSWORD_HASH_KEY);
+    if (!storedHash) return true;
+
+    const header = req.headers.authorization;
+    if (!header?.startsWith("Basic ")) return false;
+
+    try {
+        const decoded = Buffer.from(header.slice(6), "base64").toString("utf8");
+        const separator = decoded.indexOf(":");
+        if (separator < 1) return false;
+
+        const username = decoded.slice(0, separator);
+        const password = decoded.slice(separator + 1);
+        const expectedUsername = getSetting(AUTH_USERNAME_KEY) ?? "";
+        const actualHash = Buffer.from(hashPassword(password), "utf8");
+        const expectedHash = Buffer.from(storedHash, "utf8");
+
+        return username === expectedUsername &&
+            actualHash.length === expectedHash.length &&
+            timingSafeEqual(actualHash, expectedHash);
+    } catch {
+        return false;
+    }
+}
+
+function isLocalRequest(req: IncomingMessage): boolean {
+    return req.socket.remoteAddress === "127.0.0.1" ||
+        req.socket.remoteAddress === "::1" ||
+        req.socket.remoteAddress === "::ffff:127.0.0.1";
+}
+
+function requireAuthentication(req: IncomingMessage, res: ServerResponse): boolean {
+    if (isLocalRequest(req) || isAuthenticated(req)) return true;
+
+    res.writeHead(401, {
+        "Content-Type": "application/json; charset=utf-8",
+        "WWW-Authenticate": 'Basic realm="Merekai Presenter"',
+        "Cache-Control": "no-store",
+    });
+    res.end(JSON.stringify({ error: "Authentication required" }));
+    return false;
 }
 
 function parseStringArraySetting(key: string): string[] {
@@ -1941,6 +2011,45 @@ async function handleApi(
         return true;
     }
 
+    if (
+        pathname === "/api/auth" &&
+        req.method === "POST"
+    ) {
+        try {
+            const body = await readJsonBody<{
+                username?: unknown;
+                password?: unknown;
+                enabled?: unknown;
+            }>(req);
+
+            if (body?.enabled === false) {
+                setSetting(AUTH_USERNAME_KEY, "");
+                setSetting(AUTH_PASSWORD_HASH_KEY, "");
+                sendJson(res, { ok: true, enabled: false });
+                return true;
+            }
+
+            if (
+                typeof body?.username !== "string" ||
+                typeof body.password !== "string" ||
+                body.username.trim().length < 1 ||
+                body.password.length < 4
+            ) {
+                sendError(res, 400, "Username and password are required; password must be at least 4 characters");
+                return true;
+            }
+
+            setSetting(AUTH_USERNAME_KEY, body.username.trim());
+            setSetting(AUTH_PASSWORD_HASH_KEY, hashPassword(body.password));
+            sendJson(res, { ok: true, enabled: true, username: body.username.trim() });
+        } catch (error) {
+            console.error("Error configuring authentication:", error);
+            sendError(res, 400, "Invalid authentication settings");
+        }
+
+        return true;
+    }
+
     // --------------------------------------------------------
     // PLAYBACK COMMAND
     // --------------------------------------------------------
@@ -2243,6 +2352,14 @@ function startServer(): void {
 
                     const pathname =
                         requestUrl.pathname;
+
+                    if (
+                        !pathname.startsWith("/player/") &&
+                        pathname !== "/player" &&
+                        !requireAuthentication(req, res)
+                    ) {
+                        return;
+                    }
 
                     // ------------------------------------------------
                     // MEDIA
