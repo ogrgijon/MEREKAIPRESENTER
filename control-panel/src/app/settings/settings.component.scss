@@ -1,0 +1,261 @@
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 2vw, 24px);
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 36px);
+
+  .settings-toolbar,
+  .preset-section,
+  .summary-section,
+  .settings-section {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .settings-toolbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-start;
+    padding: clamp(16px, 2vw, 24px);
+
+    .toolbar-copy {
+      h2 {
+        margin: 0 0 6px;
+        font-size: 1.2rem;
+        color: var(--ink);
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+    }
+
+    .toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+  }
+
+  .preset-section,
+  .summary-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: clamp(16px, 2vw, 24px);
+  }
+
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+
+  .preset-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-height: 96px;
+    padding: 14px;
+    text-align: left;
+
+    strong {
+      font-size: 0.95rem;
+      color: var(--ink);
+    }
+
+    span {
+      white-space: normal;
+      line-height: 1.35;
+      color: var(--muted);
+    }
+  }
+
+  .summary-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .summary-pill {
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: var(--teal-soft);
+    color: var(--teal);
+    font-weight: 600;
+  }
+
+  .validation-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    border-radius: 14px;
+    background: var(--warning-soft);
+    color: var(--accent-strong);
+
+    p {
+      margin: 0;
+      line-height: 1.4;
+    }
+  }
+
+  .settings-section {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: clamp(16px, 2vw, 24px);
+
+    .section-header {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .section-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--teal);
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .section-helper {
+      color: var(--accent-strong);
+      font-weight: 600;
+    }
+  }
+
+  mat-form-field {
+    width: 100%;
+
+    &.with-browse {
+      margin-bottom: -8px;
+    }
+  }
+
+  .field-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .mat-mdc-slide-toggle {
+    align-self: center;
+    min-height: 56px;
+    padding: 0 4px;
+  }
+
+  .browse-btn {
+    align-self: flex-start;
+  }
+
+  .insert-schedules {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .insert-schedule-row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(150px, 1fr) minmax(180px, 1fr);
+    gap: 12px 14px;
+    align-items: center;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-muted);
+
+    mat-form-field {
+      margin: 0;
+    }
+
+    .insert-schedule-header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+
+      strong {
+        overflow: hidden;
+        color: var(--ink);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .insert-schedule-file {
+      min-width: 0;
+    }
+
+    .insert-schedule-browse {
+      justify-self: start;
+    }
+
+    .mat-mdc-slide-toggle {
+      min-width: 0;
+      min-height: 48px;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .settings-form {
+    padding: 16px;
+
+    .settings-toolbar {
+      flex-direction: column;
+    }
+
+    .toolbar-actions {
+      width: 100%;
+      justify-content: stretch;
+    }
+
+    .settings-section {
+      grid-template-columns: 1fr;
+      padding: 16px;
+    }
+
+    .mat-mdc-slide-toggle { align-self: start; }
+
+    .insert-schedule-row {
+      grid-template-columns: 1fr;
+      align-items: stretch;
+
+      .insert-schedule-header,
+      .insert-schedule-file,
+      .insert-schedule-browse {
+        grid-column: 1;
+      }
+
+      .insert-schedule-browse {
+        justify-self: stretch;
+      }
+    }
+  }
+}

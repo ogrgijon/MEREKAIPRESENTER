@@ -1,0 +1,21 @@
+node_modules/
+dist/
+out/
+*.db
+.DS_Store
+
+# Internal working notes and agent prompts
+/prompts/
+/readme/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.log

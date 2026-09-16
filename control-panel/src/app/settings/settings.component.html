@@ -1,0 +1,133 @@
+<form *ngIf="loaded" class="settings-form" (ngSubmit)="save()">
+  <section class="settings-toolbar">
+    <div class="toolbar-copy">
+      <h2>{{ i18n.t('settings.toolbar.title') }}</h2>
+      <p>{{ i18n.t('settings.toolbar.description') }}</p>
+    </div>
+
+    <div class="toolbar-actions">
+      <button mat-stroked-button type="button" (click)="reloadSettings()">{{ i18n.t('settings.toolbar.reloadSaved') }}</button>
+      <button mat-stroked-button type="button" (click)="revertChanges()" [disabled]="!hasChanges() || saving">{{ i18n.t('settings.toolbar.revertEdits') }}</button>
+      <button mat-stroked-button type="button" (click)="resetToDefaults()" [disabled]="saving">{{ i18n.t('settings.toolbar.resetDefaults') }}</button>
+      <button mat-flat-button color="primary" type="submit" [disabled]="!canSave()">{{ saving ? i18n.t('settings.toolbar.saving') : i18n.t('settings.toolbar.saveSettings') }}</button>
+    </div>
+  </section>
+
+  <section class="preset-section">
+    <div class="section-header">
+      <h3>{{ i18n.t('presets.title') }}</h3>
+      <p>{{ i18n.t('presets.description') }}</p>
+    </div>
+
+    <div class="preset-grid">
+      <button *ngFor="let preset of presets" mat-stroked-button type="button" class="preset-card" (click)="applyPreset(preset)">
+        <strong>{{ i18n.t(preset.label) }}</strong>
+        <span>{{ i18n.t(preset.description) }}</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="summary-section">
+    <div class="section-header">
+      <h3>{{ i18n.t('summary.title') }}</h3>
+      <p>{{ hasChanges() ? i18n.t('summary.unsaved') : i18n.t('summary.saved') }}</p>
+    </div>
+
+    <div class="summary-grid">
+      <div *ngFor="let item of activeSummary()" class="summary-pill">{{ item }}</div>
+    </div>
+
+    <div *ngIf="validationMessages().length" class="validation-box">
+      <p *ngFor="let message of validationMessages()">{{ message }}</p>
+    </div>
+  </section>
+
+  <section *ngFor="let section of sections" class="settings-section">
+    <div class="section-header">
+      <h3>{{ i18n.t(section.title) }}</h3>
+      <p>{{ i18n.t(section.description) }}</p>
+      <p *ngIf="helperText(section.key)" class="section-helper">{{ helperText(section.key) }}</p>
+    </div>
+
+    <ng-container *ngIf="section.key === 'insert'">
+      <div class="insert-schedules">
+        <div *ngFor="let schedule of insertSchedules; let i = index" class="insert-schedule-row">
+          <div class="insert-schedule-header">
+            <strong>{{ i18n.t('fields.insertRow.label') }} {{ i + 1 }}</strong>
+            <button mat-stroked-button type="button" (click)="removeInsertSchedule(i)">{{ i18n.t('remove') }}</button>
+          </div>
+          <mat-form-field appearance="outline" class="insert-schedule-file">
+            <mat-label>{{ i18n.t('fields.insertFiles.label') }}</mat-label>
+            <input matInput [(ngModel)]="schedule.file" [name]="'insertFile' + i" [disabled]="saving">
+          </mat-form-field>
+          <button mat-stroked-button type="button" class="insert-schedule-browse" (click)="browseInsertSchedule(i)" [disabled]="saving">{{ i18n.t('browse') }}</button>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ i18n.t('fields.insertEveryN.label') }}</mat-label>
+            <input matInput type="number" min="0" step="1" [(ngModel)]="schedule.everyN" [name]="'insertEveryN' + i">
+          </mat-form-field>
+          <mat-slide-toggle [(ngModel)]="schedule.afterFolder" [name]="'insertAfterFolder' + i">{{ i18n.t('fields.insertAfterFolder.label') }}</mat-slide-toggle>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ i18n.t('fields.insertFolderScope.label') }}</mat-label>
+            <mat-select [(ngModel)]="schedule.folderScope" [name]="'insertFolderScope' + i">
+              <mat-option value="top">{{ i18n.t('fields.insertFolderScope.option.top') }}</mat-option>
+              <mat-option value="exact">{{ i18n.t('fields.insertFolderScope.option.exact') }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-slide-toggle [(ngModel)]="schedule.onLoop" [name]="'insertOnLoop' + i">{{ i18n.t('fields.insertOnLoop.label') }}</mat-slide-toggle>
+          <mat-slide-toggle [(ngModel)]="schedule.hideOverlays" [name]="'insertHideOverlays' + i">{{ i18n.t('fields.insertHideOverlays.label') }}</mat-slide-toggle>
+        </div>
+      </div>
+      <button mat-stroked-button type="button" (click)="addInsertSchedule()">{{ i18n.t('fields.insertRow.add') }}</button>
+    </ng-container>
+
+    <ng-container *ngIf="section.key !== 'insert'">
+      <ng-container *ngFor="let f of fieldsFor(section.key)">
+      <mat-slide-toggle
+        *ngIf="f.type === 'boolean'"
+        [checked]="isChecked(f.key)"
+        [disabled]="isDisabled(f)"
+        (change)="setChecked(f.key, $event.checked)">
+        {{ i18n.t(f.label) }}
+      </mat-slide-toggle>
+
+      <mat-form-field *ngIf="f.type === 'select'" appearance="outline">
+        <mat-label>{{ i18n.t(f.label) }}</mat-label>
+        <mat-select [(ngModel)]="values[f.key]" [name]="f.key" [disabled]="isDisabled(f)">
+          <mat-option *ngFor="let opt of f.options" [value]="opt.value">{{ i18n.t(opt.label) }}</mat-option>
+        </mat-select>
+        <mat-hint *ngIf="f.description">{{ i18n.t(f.description) }}</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field *ngIf="f.type === 'text' || f.type === 'multiline' || f.type === 'number'" appearance="outline" [class.with-browse]="f.browse">
+        <mat-label>{{ i18n.t(f.label) }}</mat-label>
+        <textarea
+          *ngIf="f.type === 'multiline'; else singleLineField"
+          matInput
+          rows="3"
+          [(ngModel)]="values[f.key]"
+          [name]="f.key"
+          title="{{ i18n.t(f.label) }}"
+          placeholder="{{ i18n.t(f.label) }}"
+          [disabled]="isDisabled(f)"></textarea>
+        <ng-template #singleLineField><input
+          matInput
+          [type]="f.type"
+          [(ngModel)]="values[f.key]"
+          [name]="f.key"
+          title="{{ i18n.t(f.label) }}"
+          placeholder="{{ i18n.t(f.label) }}"
+          [disabled]="isDisabled(f)"
+          [attr.min]="f.min ?? null"
+          [attr.max]="f.max ?? null"
+          [attr.step]="f.step ?? null"></ng-template>
+        <mat-hint *ngIf="f.description">{{ i18n.t(f.description) }}</mat-hint>
+      </mat-form-field>
+
+      <div *ngIf="f.browse" class="field-actions">
+        <button mat-stroked-button type="button" class="browse-btn" (click)="browseFolder(f)">Browse…</button>
+        <button mat-stroked-button type="button" class="browse-btn" (click)="clearField(f.key)" [disabled]="!values[f.key]">Clear</button>
+      </div>
+      </ng-container>
+    </ng-container>
+  </section>
+</form>

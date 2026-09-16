@@ -1,0 +1,24 @@
+{
+  "name": "merekaipresenter",
+  "version": "0.1.0",
+  "description": "Local-first fullscreen photo and video presenter with a browser control panel",
+  "scripts": {
+    "dev": "npm run build && node dist/main/index.js",
+    "start": "node dist/main/index.js",
+    "build": "npm run build:server && npm run build:renderer && npm run build:panel",
+    "build:server": "tsc",
+    "build:renderer": "node scripts/build-renderer.mjs",
+    "build:panel": "npm --prefix control-panel run build",
+    "copy-assets": "npm run build:renderer",
+    "build:watch": "tsc --watch"
+  },
+  "dependencies": {
+    "sql.js": "^1.10.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/sql.js": "^1.4.11",
+    "esbuild": "^0.25.9",
+    "typescript": "^5.7.2"
+  }
+}

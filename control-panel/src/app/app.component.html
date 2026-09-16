@@ -1,0 +1,59 @@
+<mat-toolbar class="app-toolbar">
+  <div class="brand-lockup">
+    <img class="brand-mark" src="iconoMerekaiGallery.png" alt="MerekaiGallery">
+    <div class="brand-copy">
+      <span class="brand-kicker">Visual media studio</span>
+      <span class="brand">{{ i18n.t('app.title') }}</span>
+      <span class="brand-subtitle">Gallery control panel</span>
+    </div>
+  </div>
+  <div class="transport-bar" aria-label="Playback controls" role="group">
+    @for (button of transportButtons; track button.command) {
+      <button
+        mat-button
+        type="button"
+        class="transport-button"
+        [class.transport-button-accent]="button.accent"
+        (click)="sendPlaybackCommand(button.command)"
+      >
+        <span class="transport-button-face">
+          <mat-icon aria-hidden="true">{{ button.command === 'back' ? 'skip_previous' : button.command === 'play' ? 'play_arrow' : button.command === 'pause' ? 'pause' : button.command === 'next' ? 'skip_next' : button.command === 'slow' ? 'slow_motion_video' : 'fast_forward' }}</mat-icon>
+          <span>{{ i18n.t(button.labelKey) }}</span>
+        </span>
+      </button>
+    }
+  </div>
+  <div class="toolbar-actions">
+    <button mat-stroked-button class="player-toggle" (click)="openPlayer()" [title]="i18n.t('toolbar.openPlayer')" [attr.aria-label]="i18n.t('toolbar.openPlayer')">
+      <mat-icon aria-hidden="true">open_in_new</mat-icon>
+      <span>{{ i18n.t('toolbar.player') }}</span>
+    </button>
+    <button mat-stroked-button class="theme-toggle" (click)="toggleTheme()" [title]="i18n.t('toolbar.toggleTheme')" [attr.aria-label]="i18n.t('toolbar.toggleTheme')">
+      <mat-icon aria-hidden="true">{{ darkTheme ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      <span>{{ darkTheme ? 'Light' : 'Dark' }}</span>
+    </button>
+    <button mat-stroked-button class="lang-toggle" (click)="toggleLanguage()">
+      <mat-icon aria-hidden="true">language</mat-icon>
+      <span>{{ i18n.current.toUpperCase() }}</span>
+    </button>
+  </div>
+</mat-toolbar>
+
+<mat-tab-group>
+  <mat-tab>
+    <ng-template mat-tab-label>{{ i18n.t('tabs.settings') }}</ng-template>
+    <app-settings></app-settings>
+  </mat-tab>
+  <mat-tab>
+    <ng-template mat-tab-label>{{ i18n.t('tabs.playback_order') }}</ng-template>
+    <app-media-order></app-media-order>
+  </mat-tab>
+  <mat-tab>
+    <ng-template mat-tab-label>{{ i18n.t('tabs.playlist') }}</ng-template>
+    <app-playlist></app-playlist>
+  </mat-tab>
+  <mat-tab>
+    <ng-template mat-tab-label>{{ i18n.t('tabs.overlays') }}</ng-template>
+    <app-overlay-designer></app-overlay-designer>
+  </mat-tab>
+</mat-tab-group>

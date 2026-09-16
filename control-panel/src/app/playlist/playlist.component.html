@@ -1,0 +1,87 @@
+<main class="playlist-page">
+  <section class="now-playing" aria-live="polite">
+    <div class="now-playing-icon" aria-hidden="true">
+      <mat-icon>play_circle</mat-icon>
+    </div>
+    <div class="now-playing-copy">
+      <span class="eyebrow">{{ i18n.t('playlist.nowPlaying') }}</span>
+      <strong>{{ state.current ? fileName(state.current) : i18n.t('playlist.waiting') }}</strong>
+      @if (state.current) {
+        <span class="current-path">{{ folderPath(state.current) }}</span>
+      }
+      @if (state.durationSeconds) {
+        <span class="now-playing-progress progress-track" aria-hidden="true">
+          <span class="progress-fill" [style.width.%]="(state.elapsedSeconds / state.durationSeconds) * 100"></span>
+        </span>
+        <span class="time-label">{{ formatTime(state.elapsedSeconds) }} / {{ formatTime(state.durationSeconds) }}</span>
+      }
+    </div>
+    <div class="playback-status" [class.is-paused]="!state.isPlaying">
+      <span class="status-dot"></span>
+      {{ state.isPlaying ? i18n.t('playlist.playing') : i18n.t('playlist.paused') }}
+    </div>
+  </section>
+
+  <section class="playlist-panel" aria-labelledby="playlist-heading">
+    <header class="playlist-header">
+      <div>
+        <span class="eyebrow">{{ i18n.t('playlist.generated') }}</span>
+        <h2 id="playlist-heading">{{ i18n.t('playlist.queue') }}</h2>
+      </div>
+      <span class="queue-count">{{ playlist.length }} {{ i18n.t('playlist.items') }}</span>
+    </header>
+
+    @if (insertFile || alertFile) {
+      <div class="forced-playback" [attr.aria-label]="i18n.t('playlist.forcePlayback')">
+        @if (insertFile) {
+          <button class="forced-playback-row" type="button" (click)="forcePlay('insert')" [disabled]="state.playingSpecial" [class.forced-playback-current]="isSpecial('insert')">
+            <mat-icon aria-hidden="true">playlist_add</mat-icon>
+            <span class="forced-playback-copy">
+              <strong>{{ i18n.t('playlist.insert') }}</strong>
+              <span>{{ fileName(insertFile) }}</span>
+            </span>
+            <span class="forced-playback-action">{{ i18n.t('playlist.forcePlay') }}</span>
+          </button>
+        }
+        @if (alertFile) {
+          <button class="forced-playback-row" type="button" (click)="forcePlay('alert')" [disabled]="state.playingSpecial" [class.forced-playback-current]="isSpecial('alert')">
+            <mat-icon aria-hidden="true">notifications_active</mat-icon>
+            <span class="forced-playback-copy">
+              <strong>{{ i18n.t('playlist.alert') }}</strong>
+              <span>{{ fileName(alertFile) }}</span>
+            </span>
+            <span class="forced-playback-action">{{ i18n.t('playlist.forcePlay') }}</span>
+          </button>
+        }
+      </div>
+    }
+
+    @if (playlist.length) {
+      <div #playlistList class="playlist-list" role="list" [attr.aria-label]="i18n.t('playlist.ariaLabel')">
+        @for (filePath of playlist; track filePath; let itemIndex = $index) {
+          <button class="playlist-item" [class.playlist-item-current]="isCurrent(filePath)" type="button" role="listitem" (click)="playItem(itemIndex)" [attr.aria-label]="i18n.t('playlist.play') + ' ' + fileName(filePath)">
+            <span class="playlist-index">{{ itemIndex + 1 }}</span>
+            <div class="playlist-file">
+              <strong>{{ fileName(filePath) }}</strong>
+              <span>{{ folderPath(filePath) }}</span>
+              <span class="progress-track" aria-hidden="true">
+                <span class="progress-fill" [style.width.%]="progressFor(itemIndex)"></span>
+              </span>
+            </div>
+            @if (isCurrent(filePath) && state.durationSeconds && !state.playingSpecial) {
+              <span class="time-label">{{ formatTime(state.elapsedSeconds) }} / {{ formatTime(state.durationSeconds) }}</span>
+            }
+            @if (isCurrent(filePath)) {
+              <mat-icon class="current-icon" [attr.aria-label]="i18n.t('playlist.currentlyPlaying')">equalizer</mat-icon>
+            }
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="empty-playlist">
+        <mat-icon aria-hidden="true">queue_music</mat-icon>
+        <p>{{ i18n.t('playlist.empty') }}</p>
+      </div>
+    }
+  </section>
+</main>

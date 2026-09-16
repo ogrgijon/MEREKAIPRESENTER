@@ -1,0 +1,52 @@
+<div class="media-order" *ngIf="loaded">
+  <div class="folder-row">
+    <span class="current-folder">{{ currentFolder || i18n.t('mediaOrder.noFolder') }}</span>
+  </div>
+
+  <div class="toolbar-row">
+    <mat-form-field appearance="outline" class="view-filter">
+      <mat-label>{{ i18n.t('mediaOrder.orderView') }}</mat-label>
+      <mat-select [(ngModel)]="viewMode">
+        <mat-option value="folders">{{ i18n.t('mediaOrder.folders') }}</mat-option>
+        <mat-option value="folders+files">{{ i18n.t('mediaOrder.foldersFiles') }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="folder-filter">
+      <mat-label>{{ i18n.t('mediaOrder.topLevelFolder') }}</mat-label>
+      <mat-select [(ngModel)]="selectedTopLevelFolder" [disabled]="viewMode === 'folders'">
+        <mat-option *ngFor="let folder of topLevelFolders" [value]="folder">{{ folderLabel(folder) }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div class="selection-summary">
+      <strong>{{ visibleCount }}</strong>
+      <span>{{ selectionSummary }}</span>
+    </div>
+  </div>
+
+  <p class="hint">{{ i18n.t('mediaOrder.hint') }}</p>
+
+  <div cdkDropList class="list" (cdkDropListDropped)="drop($event)">
+    <ng-container *ngIf="viewMode === 'folders'; else fileOrderList">
+      <div class="item folder-item" *ngFor="let group of topLevelFolderGroups; trackBy: trackByFolder" cdkDrag>
+        <span class="handle" cdkDragHandle>⠿</span>
+        <span class="folder-badge">{{ i18n.t('mediaOrder.folder') }}</span>
+        <span class="path-text">{{ group.label }}</span>
+        <span class="count-badge">{{ group.count }}</span>
+      </div>
+    </ng-container>
+
+    <ng-template #fileOrderList>
+      <div class="item" *ngFor="let path of visibleItems; trackBy: trackByPath" cdkDrag>
+        <span class="handle" cdkDragHandle>⠿</span>
+        <span class="path-text">{{ displayPath(path) }}</span>
+      </div>
+    </ng-template>
+  </div>
+
+  <div class="actions">
+    <button mat-flat-button color="primary" (click)="save()">{{ i18n.t('mediaOrder.save') }}</button>
+    <button mat-stroked-button (click)="resetToDefault()">{{ i18n.t('mediaOrder.reset') }}</button>
+  </div>
+</div>

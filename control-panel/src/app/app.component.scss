@@ -1,0 +1,204 @@
+.app-toolbar {
+  display: flex;
+  position: relative;
+  z-index: 5;
+  gap: clamp(1rem, 2vw, 2.25rem);
+  min-height: 86px;
+  height: auto;
+  padding: 0.8rem clamp(1rem, 4vw, 3.25rem);
+  background: var(--nav-bg);
+  color: var(--nav-ink);
+  border-bottom: 1px solid var(--nav-border);
+  box-shadow: 0 10px 26px rgba(23, 32, 51, 0.1);
+
+  &::after {
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--nav-accent), var(--accent));
+    content: '';
+  }
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex: 0 0 220px;
+}
+
+.brand-mark {
+  display: block;
+  width: 54px;
+  height: 54px;
+  border: 2px solid var(--nav-border);
+  border-radius: 16px;
+  object-fit: cover;
+  background: var(--surface);
+  box-shadow: 0 7px 18px rgba(23, 32, 51, 0.16);
+}
+
+.brand-copy { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+.brand-kicker {
+  color: var(--nav-accent);
+  font-size: 0.57rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.brand {
+  color: var(--nav-ink);
+  font-size: 1.18rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.brand-subtitle {
+  color: var(--nav-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.transport-bar {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+  max-width: 640px;
+  padding: 0.35rem;
+  border: 1px solid var(--nav-border);
+  border-radius: 15px;
+  background: var(--nav-panel);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface) 55%, transparent);
+}
+
+.transport-button {
+  min-width: clamp(3.8rem, 7vw, 5.5rem);
+  min-height: 42px;
+  padding: 0;
+  border-radius: 10px;
+  color: var(--nav-muted);
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.transport-button .transport-button-face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.transport-button mat-icon,
+.toolbar-actions mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+.transport-button:hover {
+  background: var(--surface);
+  color: var(--nav-ink);
+}
+
+.transport-button:active {
+  transform: translateY(1px);
+  background: var(--accent-soft);
+}
+
+.transport-button-accent {
+  background: var(--nav-accent);
+  color: var(--nav-accent-ink);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--nav-accent) 30%, transparent);
+}
+
+.transport-button-accent:hover {
+  background: color-mix(in srgb, var(--nav-accent) 82%, var(--surface));
+  color: var(--nav-accent-ink);
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.toolbar-actions .mat-mdc-button-base {
+  min-height: 40px;
+  border-color: var(--nav-border);
+  border-radius: 11px;
+  color: var(--nav-muted);
+  background: var(--nav-panel);
+}
+
+.toolbar-actions .mdc-button__label,
+.toolbar-actions mat-icon {
+  color: inherit;
+}
+
+.theme-toggle {
+  color: var(--nav-muted);
+}
+
+.player-toggle {
+  color: var(--nav-accent);
+}
+
+.theme-toggle:hover,
+.player-toggle:hover,
+.lang-toggle:hover { background: rgba(255, 255, 255, 0.15); }
+
+.lang-toggle { color: var(--nav-accent); }
+
+.app-toolbar button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .app-toolbar {
+    flex-wrap: wrap;
+    padding-block: 0.7rem;
+  }
+
+  .brand-lockup {
+    margin-right: auto;
+    flex-basis: auto;
+  }
+
+  .transport-bar {
+    order: 3;
+    flex-wrap: wrap;
+    flex: 1 1 100%;
+    justify-content: stretch;
+  }
+
+  .transport-button { flex: 1 1 0; }
+
+  .toolbar-actions { order: 1; }
+}
+
+@media (max-width: 480px) {
+  .app-toolbar { gap: 0.6rem; padding-inline: 0.75rem; }
+  .brand-mark { width: 44px; height: 44px; border-radius: 13px; }
+  .brand-kicker { display: none; }
+  .brand { font-size: 1rem; }
+  .brand-subtitle { display: none; }
+  .toolbar-actions { gap: 0.25rem; }
+  .toolbar-actions button span { display: none; }
+  .transport-button .transport-button-face { padding-inline: 0.3rem; font-size: 0.62rem; }
+  .transport-button mat-icon { display: none; }
+}

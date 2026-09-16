@@ -1,0 +1,12 @@
+{
+  // Auto-load .github/copilot-instructions.md on every chat/agent request
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  // Enable .github/prompts/*.prompt.md as reusable slash commands
+  "chat.promptFiles": true,
+  // Surface prompt files as quick actions in new chats
+  "chat.promptFilesRecommendations": {
+    "design-ui": "Design or review a Control Panel UI/UX section",
+    "new-backend-service": "Scaffold a new Node.js service/route/repository",
+    "new-frontend-component": "Scaffold a new Angular component/feature"
+  }
+}
