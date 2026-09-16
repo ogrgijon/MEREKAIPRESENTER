@@ -14,6 +14,12 @@ log() {
     printf '\n==> %s\n' "$1"
 }
 
+run_audit_fix() {
+    if ! npm audit fix; then
+        printf '%s\n' "Warning: npm audit fix could not repair every vulnerability; continuing with the installed dependencies." >&2
+    fi
+}
+
 fail() {
     printf 'Error: %s\n' "$1" >&2
     exit 1
@@ -134,9 +140,11 @@ log "Installing application dependencies and building"
 (
     cd "$app_dir"
     npm install
-    npm audit fix
+    run_audit_fix
     npm --prefix control-panel install
-    npm --prefix control-panel audit fix
+    if ! npm --prefix control-panel audit fix; then
+        printf '%s\n' "Warning: control-panel npm audit fix could not repair every vulnerability; continuing with the installed dependencies." >&2
+    fi
     npm run build
 )
 
