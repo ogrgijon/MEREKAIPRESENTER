@@ -134,7 +134,9 @@ log "Installing application dependencies and building"
 (
     cd "$app_dir"
     npm install
+    npm audit fix
     npm --prefix control-panel install
+    npm --prefix control-panel audit fix
     npm run build
 )
 
