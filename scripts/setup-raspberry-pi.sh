@@ -239,6 +239,10 @@ set -eu
 mkdir -p "$(dirname "$player_log")"
 exec >>"$player_log" 2>&1
 printf '\n[%s] Starting Merekai player launcher\n' "\$(date --iso-8601=seconds)"
+if pgrep -u "$(id -u "$service_user")" -f "[c]hromium.*${PLAYER_HOST}:${DEFAULT_PORT}/player/" >/dev/null 2>&1; then
+    printf '[%s] Chromium player is already running\n' "\$(date --iso-8601=seconds)"
+    exit 0
+fi
 until curl --fail --silent "http://${PLAYER_HOST}:${DEFAULT_PORT}/player/" >/dev/null; do
     sleep 1
 done
@@ -248,6 +252,19 @@ EOF
 sudo install -d -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$player_bin_dir"
 sudo install -d -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$(dirname "$player_log")"
 sudo install -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$player_launcher_tmp" "$player_launcher"
+
+append_session_autostart() {
+    local file="$1"
+    sudo install -d -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$(dirname "$file")"
+    if [[ ! -f "$file" ]] || ! sudo grep -Fq "$player_launcher" "$file"; then
+        printf '\n%s &\n' "$player_launcher" | sudo tee -a "$file" >/dev/null
+        sudo chown "$service_user":"$(id -gn "$service_user")" "$file"
+    fi
+}
+
+append_session_autostart "$service_home/.config/labwc/autostart"
+append_session_autostart "$service_home/.config/lxsession/LXDE-pi/autostart"
+
 cat > "$autostart_tmp" <<EOF
 [Desktop Entry]
 Type=Application

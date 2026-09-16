@@ -13,6 +13,14 @@ const DEFAULT_CSS =
   'position:absolute;left:24px;bottom:24px;color:#fff;font:600 28px/1.3 sans-serif;text-shadow:0 2px 6px rgba(0,0,0,.8);';
 const DEFAULT_DRAWING_PATH = 'M8 70 C 22 12, 38 88, 52 34 S 80 18, 92 70';
 
+function createLayerId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `layer-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 // Tokens available to authors of an overlay template.
 const TOKENS = ['{filename}', '{parentFolder}'];
 const KNOWN_CSS_PROPERTIES = new Set([
@@ -304,7 +312,7 @@ export class OverlayDesignerComponent implements OnInit, AfterViewInit, OnDestro
 
   addLayer(type: OverlayType = 'text'): void {
     this.designerLayers.push(this.createDesignerLayer({
-      id: crypto.randomUUID(),
+      id: createLayerId(),
       type,
       template: type === 'text' ? '{filename}' : '',
       css: DEFAULT_CSS,
@@ -335,7 +343,7 @@ export class OverlayDesignerComponent implements OnInit, AfterViewInit, OnDestro
     if (!layer) return;
     const duplicate = this.createDesignerLayer({
       ...this.toOverlayLayer(layer),
-      id: crypto.randomUUID(),
+      id: createLayerId(),
     });
     duplicate.offsetX += 18;
     duplicate.offsetY += 18;
