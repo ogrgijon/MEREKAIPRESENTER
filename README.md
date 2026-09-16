@@ -77,6 +77,7 @@ fit mode, volume, and playback speed while reviewing material with a group.
 ### Media order
 
 - Choose a media folder with the native folder picker
+- A default library is created automatically: `Pictures/MerekaiGallery` on Windows and Linux, or `media` in the home directory on Raspberry Pi
 - View folders only, or folders with their files
 - Reorder top-level folders by drag and drop
 - Reorder individual files by drag and drop

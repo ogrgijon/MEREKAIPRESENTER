@@ -21,6 +21,7 @@ export interface OverlayLayer {
 export interface MediaOrderResponse {
   files: string[];
   order: string[];
+  hidden: string[];
 }
 
 export interface PlaybackState {
@@ -39,6 +40,12 @@ export interface PlaybackState {
 
 export type PlaybackCommand = 'play' | 'pause' | 'back' | 'next' | 'fast' | 'slow' | 'insert' | 'alert';
 
+export interface UploadResponse {
+  ok: boolean;
+  uploaded: string[];
+  rejected: string[];
+}
+
 // Talks to the local Node http server that hosts both the control panel and the player.
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -56,8 +63,8 @@ export class ApiService {
     return this.http.get<MediaOrderResponse>('/api/media-order');
   }
 
-  saveMediaOrder(order: string[]): Observable<void> {
-    return this.http.post<void>('/api/media-order', order);
+  saveMediaOrder(order: string[], hidden: string[]): Observable<void> {
+    return this.http.post<void>('/api/media-order', { order, hidden });
   }
 
   getPlaybackState(): Observable<PlaybackState> {
@@ -83,5 +90,14 @@ export class ApiService {
 
   sendPlaybackCommand(command: PlaybackCommand, index?: number): Observable<void> {
     return this.http.post<void>('/api/playback-command', { command, index });
+  }
+
+  uploadMedia(files: File[]): Observable<UploadResponse> {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append('files', file, file.name);
+    }
+
+    return this.http.post<UploadResponse>('/api/upload', formData);
   }
 }

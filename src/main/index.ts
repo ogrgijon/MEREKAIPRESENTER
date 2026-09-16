@@ -5,6 +5,8 @@ import http, {
     ServerResponse,
 } from "node:http";
 
+import Busboy from "busboy";
+
 import path from "node:path";
 
 import {
@@ -14,7 +16,9 @@ import {
     readFileSync,
     readdirSync,
     statSync,
+    unlinkSync,
     writeFileSync,
+    createWriteStream,
 } from "node:fs";
 
 import {
@@ -24,6 +28,10 @@ import {
 import {
     spawn,
 } from "node:child_process";
+
+import {
+    finished,
+} from "node:stream/promises";
 
 import initSqlJs, {
     Database,
@@ -53,6 +61,41 @@ const HOST =
     process.env.HOST?.trim() ||
     "127.0.0.1";
 const APP_NAME = "merekaipresenter";
+
+const USER_HOME =
+    process.env.HOME ||
+    process.env.USERPROFILE ||
+    process.cwd();
+
+function isRaspberryPi(): boolean {
+    if (process.platform !== "linux") {
+        return false;
+    }
+
+    try {
+        return readFileSync(
+            "/proc/device-tree/model",
+            "utf8",
+        ).toLowerCase().includes("raspberry pi");
+    } catch {
+        return false;
+    }
+}
+
+const DEFAULT_MEDIA_FOLDER =
+    process.platform === "win32"
+        ? path.join(
+            process.env.USERPROFILE || USER_HOME,
+            "Pictures",
+            "MerekaiGallery",
+        )
+        : isRaspberryPi()
+            ? path.join(USER_HOME, "media")
+            : path.join(
+                USER_HOME,
+                "Pictures",
+                "MerekaiGallery",
+            );
 
 const DATA_HOME =
     process.platform === "win32"
@@ -131,6 +174,7 @@ const SETTINGS_KEYS = [
     "alertIntervalSeconds",
     "bodyBackgroundColor",
     "mediaOrder",
+    "mediaHidden",
     "overlayLayers",
 ] as const;
 
@@ -190,6 +234,10 @@ let db: Database | null = null;
 
 async function initDb(): Promise<void> {
     mkdirSync(DATA_DIR, {
+        recursive: true,
+    });
+
+    mkdirSync(DEFAULT_MEDIA_FOLDER, {
         recursive: true,
     });
 
@@ -290,10 +338,23 @@ function getAllSettings(): Record<string, string> {
 
     for (const key of SETTINGS_KEYS) {
         values[key] =
-            getSetting(key) ?? "";
+            key === "mediaFolder"
+                ? getSetting(key) || DEFAULT_MEDIA_FOLDER
+                : getSetting(key) ?? "";
     }
 
     return values;
+}
+
+function parseStringArraySetting(key: string): string[] {
+    try {
+        const parsed = JSON.parse(getSetting(key) ?? "[]");
+        return Array.isArray(parsed)
+            ? parsed.filter((value): value is string => typeof value === "string")
+            : [];
+    } catch {
+        return [];
+    }
 }
 
 // ============================================================
@@ -365,7 +426,8 @@ function walk(
 
 function getMediaFolder(): string {
     return (
-        getSetting("mediaFolder") ?? ""
+        getSetting("mediaFolder") ||
+        DEFAULT_MEDIA_FOLDER
     );
 }
 
@@ -1108,6 +1170,100 @@ function normalizePlaybackState(
     };
 }
 
+const MAX_UPLOAD_FILE_SIZE = 10 * 1024 * 1024 * 1024;
+
+async function handleMediaUpload(
+    req: IncomingMessage,
+    res: ServerResponse,
+): Promise<void> {
+    const mediaFolder = getMediaFolder();
+
+    if (!mediaFolder) {
+        sendError(res, 400, "No media folder configured");
+        return;
+    }
+
+    if (!existsSync(mediaFolder) || !statSync(mediaFolder).isDirectory()) {
+        sendError(res, 400, "Configured media folder does not exist");
+        return;
+    }
+
+    const uploaded: string[] = [];
+    const rejected: string[] = [];
+    const pendingWrites: Promise<void>[] = [];
+    let uploadError: Error | null = null;
+
+    await new Promise<void>((resolve) => {
+        const busboy = Busboy({
+            headers: req.headers,
+            limits: {
+                files: 100,
+                fileSize: MAX_UPLOAD_FILE_SIZE,
+            },
+        });
+
+        busboy.on("file", (fieldName, file, info) => {
+            void fieldName;
+            const safeName = path.basename(info.filename);
+
+            if (!safeName || !MEDIA_REGEX.test(safeName)) {
+                rejected.push(info.filename || "unnamed file");
+                file.resume();
+                return;
+            }
+
+            const destination = path.join(mediaFolder, safeName);
+            const writeStream = createWriteStream(destination);
+            file.pipe(writeStream);
+
+            const writePromise = finished(writeStream)
+                .then(() => {
+                    uploaded.push(safeName);
+                })
+                .catch((error: unknown) => {
+                    uploadError = error instanceof Error
+                        ? error
+                        : new Error("Unable to save uploaded file");
+                });
+
+            pendingWrites.push(writePromise);
+
+            file.on("limit", () => {
+                uploadError = new Error(
+                    `File exceeds the ${MAX_UPLOAD_FILE_SIZE / (1024 * 1024 * 1024)} GB upload limit`,
+                );
+                writeStream.destroy();
+            });
+        });
+
+        busboy.on("error", (error: Error) => {
+            uploadError = error;
+            resolve();
+        });
+
+        busboy.on("close", () => {
+            void Promise.all(pendingWrites).then(() => resolve());
+        });
+
+        req.pipe(busboy);
+    });
+
+    const completedUploadError: Error | null = uploadError as Error | null;
+
+    if (completedUploadError) {
+        sendError(res, 400, completedUploadError.message);
+        return;
+    }
+
+    if (uploaded.length === 0) {
+        sendError(res, 400, "No supported media files were uploaded");
+        return;
+    }
+
+    broadcast({ type: "settings-changed" });
+    sendJson(res, { ok: true, uploaded, rejected });
+}
+
 async function handleApi(
     req: IncomingMessage,
     res: ServerResponse,
@@ -1349,6 +1505,7 @@ async function handleApi(
             {
                 files,
                 order,
+                hidden: parseStringArraySetting("mediaHidden"),
             },
         );
 
@@ -1364,10 +1521,28 @@ async function handleApi(
         req.method === "POST"
     ) {
         try {
-            const order =
+            const body =
                 await readJsonBody<unknown>(
                     req,
                 );
+
+            const order =
+                Array.isArray(body)
+                    ? body
+                    : typeof body === "object" && body !== null &&
+                        Array.isArray((body as { order?: unknown }).order)
+                        ? (body as { order: unknown }).order
+                        : [];
+
+            const hidden =
+                Array.isArray(body)
+                    ? []
+                    : typeof body === "object" && body !== null &&
+                        Array.isArray((body as { hidden?: unknown }).hidden)
+                        ? (body as { hidden: unknown[] }).hidden.filter(
+                            (item: unknown): item is string => typeof item === "string",
+                        )
+                        : [];
 
             const value =
                 Array.isArray(order)
@@ -1383,6 +1558,11 @@ async function handleApi(
             setSetting(
                 "mediaOrder",
                 JSON.stringify(value),
+            );
+
+            setSetting(
+                "mediaHidden",
+                JSON.stringify(hidden),
             );
 
             broadcast({
@@ -1550,6 +1730,18 @@ async function handleApi(
             );
         }
 
+        return true;
+    }
+
+    // --------------------------------------------------------
+    // MEDIA UPLOAD
+    // --------------------------------------------------------
+
+    if (
+        pathname === "/api/upload" &&
+        req.method === "POST"
+    ) {
+        await handleMediaUpload(req, res);
         return true;
     }
 

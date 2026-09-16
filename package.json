@@ -14,10 +14,12 @@
     "build:watch": "tsc --watch"
   },
   "dependencies": {
+    "busboy": "^1.6.0",
     "sql.js": "^1.10.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "@types/busboy": "^1.5.4",
     "@types/sql.js": "^1.4.11",
     "esbuild": "^0.25.9",
     "typescript": "^5.7.2"

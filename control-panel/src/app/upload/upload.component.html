@@ -1,0 +1,44 @@
+<main class="upload-page">
+  <section class="upload-header">
+    <div>
+      <p class="eyebrow">{{ i18n.t('upload.eyebrow') }}</p>
+      <h2>{{ i18n.t('upload.title') }}</h2>
+      <p class="description">{{ i18n.t('upload.description') }}</p>
+    </div>
+    <mat-icon aria-hidden="true">cloud_upload</mat-icon>
+  </section>
+
+  <section class="upload-panel">
+    <input
+      #fileInput
+      class="file-input"
+      type="file"
+      multiple
+      accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.webm"
+      (change)="onFilesSelected($event)"
+    >
+
+    <button mat-flat-button color="primary" type="button" (click)="chooseFiles()" [disabled]="uploading">
+      <mat-icon aria-hidden="true">folder_open</mat-icon>
+      {{ i18n.t('upload.choose') }}
+    </button>
+
+    <div class="file-list" *ngIf="selectedFiles.length">
+      <div class="file-row" *ngFor="let file of selectedFiles">
+        <span>{{ file.name }}</span>
+        <small>{{ file.size / 1024 / 1024 | number:'1.1-1' }} MB</small>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button mat-flat-button color="primary" type="button" (click)="upload()" [disabled]="!selectedFiles.length || uploading">
+        <mat-icon aria-hidden="true">upload</mat-icon>
+        {{ uploading ? i18n.t('upload.uploading') : i18n.t('upload.upload') }}
+      </button>
+      <button mat-stroked-button type="button" (click)="clear()" [disabled]="!selectedFiles.length || uploading">{{ i18n.t('upload.clear') }}</button>
+    </div>
+
+    <p class="status success" *ngIf="message">{{ message }}</p>
+    <p class="status error" *ngIf="error">{{ error }}</p>
+  </section>
+</main>

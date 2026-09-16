@@ -139,6 +139,7 @@ export class SettingsComponent implements OnInit {
   savedValues: Record<string, string> = {};
   insertSchedules: InsertSchedule[] = [];
   savedInsertSchedules: InsertSchedule[] = [];
+  libraryFiles: string[] = [];
   loaded = false;
   saving = false;
 
@@ -146,6 +147,7 @@ export class SettingsComponent implements OnInit {
 
   ngOnInit(): void {
     this.reloadSettings();
+    this.refreshLibraryFiles();
   }
 
   fieldsFor(section: FieldSection): FieldDef[] {
@@ -176,14 +178,12 @@ export class SettingsComponent implements OnInit {
   }
 
   browseInsertSchedule(index: number): void {
-    this.api.pickFileNative().subscribe({
-      next: ({ path }) => {
-        if (path) this.insertSchedules[index].file = path;
-      },
-      error: () => {
-        this.snackBar.open(this.i18n.t('settings.nativePickerError'), this.i18n.t('ok'), { duration: 3500 });
-      },
-    });
+    this.refreshLibraryFiles();
+    if (this.libraryFiles.length === 0) {
+      this.snackBar.open(this.i18n.t('settings.libraryEmpty'), this.i18n.t('ok'), { duration: 3500 });
+      return;
+    }
+    this.snackBar.open(this.i18n.t('settings.chooseLibraryFile'), this.i18n.t('ok'), { duration: 2500 });
   }
 
   browseFolder(field: FieldDef): void {
@@ -200,6 +200,17 @@ export class SettingsComponent implements OnInit {
       },
       error: () => {
         this.snackBar.open(this.i18n.t('settings.nativePickerError'), this.i18n.t('ok'), { duration: 3500 });
+      },
+    });
+  }
+
+  refreshLibraryFiles(): void {
+    this.api.getMediaOrder().subscribe({
+      next: ({ files }) => {
+        this.libraryFiles = files;
+      },
+      error: () => {
+        this.libraryFiles = [];
       },
     });
   }

@@ -5,6 +5,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApiService } from '../services/api.service';
 import { I18nService } from '../services/i18n.service';
@@ -16,7 +17,7 @@ type MediaOrderViewMode = 'folders' | 'folders+files';
 @Component({
   selector: 'app-media-order',
   standalone: true,
-  imports: [CommonModule, FormsModule, DragDropModule, MatButtonModule, MatFormFieldModule, MatSelectModule],
+  imports: [CommonModule, FormsModule, DragDropModule, MatButtonModule, MatFormFieldModule, MatSelectModule, MatIconModule],
   templateUrl: './media-order.component.html',
   styleUrl: './media-order.component.scss',
 })
@@ -26,6 +27,7 @@ export class MediaOrderComponent implements OnInit {
   selectedTopLevelFolder = ALL_FOLDERS;
   viewMode: MediaOrderViewMode = 'folders+files';
   loaded = false;
+  hiddenPaths = new Set<string>();
 
   constructor(private api: ApiService, private snackBar: MatSnackBar, public readonly i18n: I18nService) {}
 
@@ -38,12 +40,13 @@ export class MediaOrderComponent implements OnInit {
       this.currentFolder = values['mediaFolder'] || '';
       console.log('📂 Control Panel - currentFolder loaded:', this.currentFolder);
     });
-    this.api.getMediaOrder().subscribe(({ files, order }) => {
-      console.log('📋 Control Panel - GET /api/media-order response:', { files, order });
+    this.api.getMediaOrder().subscribe(({ files, order, hidden }) => {
+      console.log('📋 Control Panel - GET /api/media-order response:', { files, order, hidden });
       const known = new Set(files);
       const kept = order.filter((path) => known.has(path));
       const missing = files.filter((path) => !kept.includes(path));
       this.items = [...kept, ...missing];
+      this.hiddenPaths = new Set(hidden ?? []);
       if (!this.topLevelFolders.includes(this.selectedTopLevelFolder)) {
         this.selectedTopLevelFolder = ALL_FOLDERS;
       }
@@ -114,6 +117,42 @@ export class MediaOrderComponent implements OnInit {
     return group.key;
   }
 
+  isHidden(path: string): boolean {
+    return this.hiddenPaths.has(path);
+  }
+
+  isFolderHidden(folder: string): boolean {
+    const files = this.items.filter((path) => this.topLevelFolderOf(path) === folder);
+    if (files.length === 0) return false;
+    if (folder === ROOT_FOLDER) return files.every((path) => this.hiddenPaths.has(path));
+    return this.hiddenPaths.has(`${folder}/`);
+  }
+
+  toggleHidden(path: string): void {
+    if (this.hiddenPaths.has(path)) {
+      this.hiddenPaths.delete(path);
+    } else {
+      this.hiddenPaths.add(path);
+    }
+  }
+
+  toggleFolderHidden(folder: string): void {
+    const files = this.items.filter((path) => this.topLevelFolderOf(path) === folder);
+    const hidden = this.isFolderHidden(folder);
+
+    if (folder === ROOT_FOLDER) {
+      for (const file of files) {
+        if (hidden) this.hiddenPaths.delete(file);
+        else this.hiddenPaths.add(file);
+      }
+      return;
+    }
+
+    const key = `${folder}/`;
+    if (hidden) this.hiddenPaths.delete(key);
+    else this.hiddenPaths.add(key);
+  }
+
   drop(event: CdkDragDrop<string[]>): void {
     if (this.viewMode === 'folders') {
       this.reorderTopLevelFolders(event.previousIndex, event.currentIndex);
@@ -140,7 +179,7 @@ export class MediaOrderComponent implements OnInit {
 
   save(): void {
     console.log('💾 Control Panel - Saving media order:', this.items);
-    this.api.saveMediaOrder(this.items).subscribe(
+    this.api.saveMediaOrder(this.items, Array.from(this.hiddenPaths)).subscribe(
       () => {
         console.log('✓ Control Panel - Order saved successfully');
         this.snackBar.open(this.i18n.t('mediaOrder.saved'), this.i18n.t('ok'), { duration: 3000 });

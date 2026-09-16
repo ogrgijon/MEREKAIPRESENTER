@@ -102,6 +102,16 @@
       white-space: nowrap;
     }
 
+    .hidden-path {
+      opacity: 0.45;
+      text-decoration: line-through;
+    }
+
+    .visibility-button {
+      flex: 0 0 auto;
+      color: var(--muted);
+    }
+
     .folder-badge,
     .count-badge {
       padding: 4px 8px;

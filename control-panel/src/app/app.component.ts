@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,6 +8,7 @@ import { SettingsComponent } from './settings/settings.component';
 import { MediaOrderComponent } from './media-order/media-order.component';
 import { OverlayDesignerComponent } from './overlay-designer/overlay-designer.component';
 import { PlaylistComponent } from './playlist/playlist.component';
+import { UploadComponent } from './upload/upload.component';
 import { ApiService, PlaybackCommand } from './services/api.service';
 import { I18nService } from './services/i18n.service';
 
@@ -24,11 +25,14 @@ import { I18nService } from './services/i18n.service';
     MediaOrderComponent,
     OverlayDesignerComponent,
     PlaylistComponent,
+    UploadComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
+  @ViewChild(MediaOrderComponent) private mediaOrder?: MediaOrderComponent;
+
   darkTheme = false;
   readonly transportButtons: Array<{ labelKey: string; command: PlaybackCommand; accent?: boolean }> = [
     { labelKey: 'transport.back', command: 'back' },
@@ -64,5 +68,11 @@ export class AppComponent {
         this.snackBar.open('Playback command failed', 'OK', { duration: 2500 });
       },
     });
+  }
+
+  onTabChange(index: number): void {
+    if (index === 1) {
+      this.mediaOrder?.reload();
+    }
   }
 }

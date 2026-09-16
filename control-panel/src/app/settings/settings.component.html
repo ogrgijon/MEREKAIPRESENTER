@@ -56,11 +56,13 @@
             <strong>{{ i18n.t('fields.insertRow.label') }} {{ i + 1 }}</strong>
             <button mat-stroked-button type="button" (click)="removeInsertSchedule(i)">{{ i18n.t('remove') }}</button>
           </div>
-          <mat-form-field appearance="outline" class="insert-schedule-file">
+            <mat-form-field appearance="outline" class="insert-schedule-file">
             <mat-label>{{ i18n.t('fields.insertFiles.label') }}</mat-label>
-            <input matInput [(ngModel)]="schedule.file" [name]="'insertFile' + i" [disabled]="saving">
+            <mat-select [(ngModel)]="schedule.file" [name]="'insertFile' + i" [disabled]="saving">
+              <mat-option *ngFor="let file of libraryFiles" [value]="file">{{ file }}</mat-option>
+            </mat-select>
           </mat-form-field>
-          <button mat-stroked-button type="button" class="insert-schedule-browse" (click)="browseInsertSchedule(i)" [disabled]="saving">{{ i18n.t('browse') }}</button>
+          <button mat-stroked-button type="button" class="insert-schedule-browse" (click)="refreshLibraryFiles()" [disabled]="saving">{{ i18n.t('settings.refreshLibrary') }}</button>
           <mat-form-field appearance="outline">
             <mat-label>{{ i18n.t('fields.insertEveryN.label') }}</mat-label>
             <input matInput type="number" min="0" step="1" [(ngModel)]="schedule.everyN" [name]="'insertEveryN' + i">
@@ -109,7 +111,13 @@
           title="{{ i18n.t(f.label) }}"
           placeholder="{{ i18n.t(f.label) }}"
           [disabled]="isDisabled(f)"></textarea>
-        <ng-template #singleLineField><input
+        <ng-template #singleLineField><mat-select
+          *ngIf="f.key === 'alertFile'; else textField"
+          [(ngModel)]="values[f.key]"
+          [name]="f.key"
+          [disabled]="isDisabled(f)">
+          <mat-option *ngFor="let file of libraryFiles" [value]="file">{{ file }}</mat-option>
+        </mat-select><ng-template #textField><input
           matInput
           [type]="f.type"
           [(ngModel)]="values[f.key]"
@@ -119,12 +127,12 @@
           [disabled]="isDisabled(f)"
           [attr.min]="f.min ?? null"
           [attr.max]="f.max ?? null"
-          [attr.step]="f.step ?? null"></ng-template>
+          [attr.step]="f.step ?? null"></ng-template></ng-template>
         <mat-hint *ngIf="f.description">{{ i18n.t(f.description) }}</mat-hint>
       </mat-form-field>
 
-      <div *ngIf="f.browse" class="field-actions">
-        <button mat-stroked-button type="button" class="browse-btn" (click)="browseFolder(f)">Browse…</button>
+      <div *ngIf="f.browse && f.key !== 'alertFile'" class="field-actions">
+        <button mat-stroked-button type="button" class="browse-btn" (click)="browseFolder(f)" [title]="i18n.t('settings.remotePickerHint')">Browse…</button>
         <button mat-stroked-button type="button" class="browse-btn" (click)="clearField(f.key)" [disabled]="!values[f.key]">Clear</button>
       </div>
       </ng-container>

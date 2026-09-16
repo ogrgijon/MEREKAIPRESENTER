@@ -34,13 +34,19 @@
         <span class="folder-badge">{{ i18n.t('mediaOrder.folder') }}</span>
         <span class="path-text">{{ group.label }}</span>
         <span class="count-badge">{{ group.count }}</span>
+        <button mat-icon-button type="button" class="visibility-button" (click)="$event.stopPropagation(); toggleFolderHidden(group.key)" [attr.aria-label]="i18n.t(isFolderHidden(group.key) ? 'mediaOrder.showFolder' : 'mediaOrder.hideFolder')" [title]="i18n.t(isFolderHidden(group.key) ? 'mediaOrder.showFolder' : 'mediaOrder.hideFolder')">
+          <mat-icon>{{ isFolderHidden(group.key) ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
       </div>
     </ng-container>
 
     <ng-template #fileOrderList>
       <div class="item" *ngFor="let path of visibleItems; trackBy: trackByPath" cdkDrag>
         <span class="handle" cdkDragHandle>⠿</span>
-        <span class="path-text">{{ displayPath(path) }}</span>
+        <span class="path-text" [class.hidden-path]="isHidden(path)">{{ displayPath(path) }}</span>
+        <button mat-icon-button type="button" class="visibility-button" (click)="$event.stopPropagation(); toggleHidden(path)" [attr.aria-label]="i18n.t(isHidden(path) ? 'mediaOrder.showFile' : 'mediaOrder.hideFile')" [title]="i18n.t(isHidden(path) ? 'mediaOrder.showFile' : 'mediaOrder.hideFile')">
+          <mat-icon>{{ isHidden(path) ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
       </div>
     </ng-template>
   </div>

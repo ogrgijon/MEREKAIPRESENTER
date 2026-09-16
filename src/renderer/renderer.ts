@@ -58,6 +58,7 @@ let savedVideoTime: number | null = null;
 // ============================================================
 
 let mediaOrder: string[] = [];
+let mediaHidden: string[] = [];
 
 // ============================================================
 // OVERLAYS
@@ -187,6 +188,37 @@ function folderOf(file: string): string {
               normalized.lastIndexOf("/"),
           )
         : "";
+}
+
+function isHiddenMedia(filePath: string): boolean {
+    return mediaHidden.some((entry) =>
+        entry.endsWith("/")
+            ? filePath.startsWith(entry)
+            : filePath === entry,
+    );
+}
+
+function normalizeMediaReference(value: string): string {
+    const normalized = value.replace(/\\/g, "/");
+    const normalizedFolder = currentFolder.replace(/\\/g, "/").replace(/\/$/, "");
+
+    if (normalizedFolder && normalized.startsWith(`${normalizedFolder}/`)) {
+        return normalized.slice(normalizedFolder.length + 1);
+    }
+
+    return normalized.replace(/^\.\//, "");
+}
+
+function isSpecialMedia(filePath: string): boolean {
+    const references = [
+        alertFile,
+        ...insertSchedules.map((schedule) => schedule.file),
+    ];
+
+    return references.some((reference) =>
+        reference.trim() !== "" &&
+        normalizeMediaReference(reference) === normalizeMediaReference(filePath),
+    );
 }
 
 // ============================================================
@@ -472,6 +504,14 @@ async function init(): Promise<void> {
             [] as string[],
         );
 
+    mediaHidden =
+        parseJsonSetting(
+            await api.getSetting(
+                "mediaHidden",
+            ),
+            [] as string[],
+        );
+
     overlayLayers =
         parseJsonSetting(
             await api.getSetting(
@@ -569,6 +609,8 @@ async function loadFolder(
             folder,
         );
 
+    mediaList = mediaList.filter((filePath) => !isSpecialMedia(filePath));
+
     if (
         mediaList.length ===
         0
@@ -607,7 +649,7 @@ async function loadFolder(
                 ) =>
                     known.has(
                         filePath,
-                    ),
+                    ) && !isHiddenMedia(filePath),
             );
 
         const missing =
@@ -617,7 +659,7 @@ async function loadFolder(
                 ) =>
                     !ordered.includes(
                         filePath,
-                    ),
+                    ) && !isHiddenMedia(filePath),
             );
 
         mediaList = [
@@ -625,11 +667,17 @@ async function loadFolder(
             ...missing,
         ];
     } else if (shuffle) {
+        mediaList = mediaList.filter((filePath) => !isHiddenMedia(filePath));
         mediaList.sort(
             () =>
                 Math.random() -
                 0.5,
         );
+    }
+
+    if (mediaList.length === 0) {
+        showMessage("No visible media is configured.");
+        return;
     }
 
     currentIndex = 0;

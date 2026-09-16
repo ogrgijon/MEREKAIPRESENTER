@@ -84,6 +84,9 @@ should play into it:
 mkdir -p /home/<pi-user>/media
 ```
 
+The server creates `/home/<pi-user>/media` automatically when it starts if the
+folder does not exist. The path can still be changed later in Settings.
+
 Use supported image formats (`jpg`, `jpeg`, `png`, `gif`, `webp`) and video
 formats (`mp4`, `webm`).
 
@@ -173,6 +176,17 @@ From a device connected to the hotspot, open
 choose `/home/<pi-user>/media` in the Settings screen and configure the order,
 overlays, and playback options.
 
+The Browse buttons open a native picker on the Raspberry Pi desktop, not on
+the remote PC or phone. When using the control panel remotely, type the Pi
+filesystem path directly into the field, for example
+`/home/<pi-user>/media`. Use Browse on the Pi desktop when you need to select
+the path visually.
+
+To copy media from another computer without using SSH, open the `Upload`
+tab in the remote control panel. Choose one or more supported files and select
+`Upload to Pi`. Files are uploaded to the configured media folder. Supported
+formats are `jpg`, `jpeg`, `png`, `gif`, `webp`, `mp4`, and `webm`.
+
 ## 5. Start the player fullscreen
 
 After the desktop session starts, configure Chromium to open the player in
@@ -213,17 +227,47 @@ journalctl -u merekai-presenter.service -f
 
 ## Maintenance
 
-Update the application from the Pi with the player stopped or while the
-display is running:
+### Update to the latest version
+
+Connect to the Pi over SSH, or open a terminal on the Pi. The update does not
+remove the media folder or application settings. Stop the service before
+updating so the old server is not using files while they are rebuilt:
 
 ```bash
 cd /home/<pi-user>/merekaipresenter
+sudo systemctl stop merekai-presenter.service
 git pull
 npm install
 npm --prefix control-panel install
 npm run build
 sudo systemctl restart merekai-presenter.service
 ```
+
+The `git pull` command updates to the latest version on the current branch. To
+update to a specific release, list the available tags and check out the
+desired tag instead:
+
+```bash
+cd /home/<pi-user>/merekaipresenter
+git fetch --tags
+git tag --sort=-version:refname | head
+git checkout v1.2.3
+npm install
+npm --prefix control-panel install
+npm run build
+sudo systemctl restart merekai-presenter.service
+```
+
+Verify that the new version is running:
+
+```bash
+sudo systemctl status merekai-presenter.service --no-pager
+journalctl -u merekai-presenter.service -n 50 --no-pager
+```
+
+If the build fails, do not restart the service with the incomplete build. Fix
+the reported error, run `npm run build` again, and then start the previous
+service with `sudo systemctl start merekai-presenter.service`.
 
 The application database is stored outside the repository under
 `~/.local/share/merekaipresenter/settings.db`. Back it up if the playback
