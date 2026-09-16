@@ -22,6 +22,10 @@ server service, creates the Chromium kiosk autostart entry, and offers to
 enable desktop autologin and disable display blanking. The manual steps below
 explain what it changes and are useful when adapting the setup.
 
+The wizard is safe to run again for updates. Before rebuilding, it removes the
+previous Merekai system service and kiosk launcher, then installs them again.
+The repository, media folder, and application settings database are preserved.
+
 ## 1. Install the Pi prerequisites
 
 Connect the Pi to the Internet temporarily. The wizard installs Node.js 20 or

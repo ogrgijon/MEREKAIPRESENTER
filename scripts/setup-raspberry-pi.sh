@@ -132,6 +132,14 @@ EOF
 
 confirm "Apply this configuration?" || fail "Cancelled."
 
+log "Removing previous Merekai installation"
+sudo systemctl disable --now merekai-presenter.service 2>/dev/null || true
+sudo rm -f /etc/systemd/system/merekai-presenter.service
+sudo systemctl daemon-reload
+sudo systemctl reset-failed merekai-presenter.service 2>/dev/null || true
+rm -f "$service_home/.config/autostart/merekai-player.desktop"
+rm -f "$service_home/.local/bin/merekai-player"
+
 log "Preparing the media directory"
 mkdir -p "$media_dir"
 sudo chown "$service_user":"$(id -gn "$service_user")" "$media_dir"
