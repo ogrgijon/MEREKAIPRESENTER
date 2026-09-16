@@ -33,16 +33,25 @@ sudo apt update
 sudo apt install -y git chromium network-manager curl
 ```
 
+Install Node.js 20 or newer. This also installs the matching `npm` command:
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
 Confirm the versions:
 
 ```bash
 node --version
+npm --version
 chromium --version
 nmcli --version
 ```
 
-If Node.js is not installed or is older than 20, install a current Node.js 20+
-release before continuing.
+The `node --version` output must be `v20` or newer before continuing. If Node.js
+20 or newer is already installed, skip the NodeSource commands and only verify
+that both `node` and `npm` are available.
 
 ## 2. Install Merekai Presenter
 
