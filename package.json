@@ -1,6 +1,7 @@
 {
   "name": "merekaipresenter",
   "version": "0.1.0",
+  "license": "MIT",
   "description": "Local-first fullscreen photo and video presenter with a browser control panel",
   "scripts": {
     "dev": "npm run build && node dist/main/index.js",
