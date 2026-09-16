@@ -177,6 +177,12 @@ Pi](readme/raspberry-pi.md). Incluye la instalación, la configuración del
 punto de acceso, el acceso remoto al panel, el inicio con systemd y el modo
 kiosco de Chromium.
 
+La guía también incluye un asistente interactivo de configuración:
+
+```bash
+bash scripts/setup-raspberry-pi.sh
+```
+
 ## Estructura del proyecto
 
 ```text

@@ -157,6 +157,12 @@ see the [Raspberry Pi player guide](readme/raspberry-pi.md). It covers
 installation, hotspot setup, remote control-panel access, systemd startup,
 and Chromium kiosk mode.
 
+The guide also includes the interactive setup runner:
+
+```bash
+bash scripts/setup-raspberry-pi.sh
+```
+
 ## Project structure
 
 ```text

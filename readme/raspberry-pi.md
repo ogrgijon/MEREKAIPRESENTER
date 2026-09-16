@@ -10,6 +10,17 @@ environment and NetworkManager. Replace `<pi-user>` with the Linux username on
 the Pi. Do not use this setup on an untrusted network: the application has no
 authentication.
 
+For an interactive setup, run the included wizard from the repository root:
+
+```bash
+bash scripts/setup-raspberry-pi.sh
+```
+
+The wizard asks for the hotspot details and Pi paths, then configures the
+hotspot, builds the application, installs the server service, and creates the
+Chromium kiosk autostart entry. The manual steps below explain what it changes
+and are useful when adapting the setup.
+
 ## 1. Install the Pi prerequisites
 
 Connect the Pi to the Internet temporarily, then install Node.js 20 or newer,
