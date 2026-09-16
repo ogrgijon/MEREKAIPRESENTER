@@ -34,7 +34,7 @@ require_command sudo
 command -v apt-get >/dev/null 2>&1 || fail "This wizard requires a Debian-based Raspberry Pi OS with apt-get."
 
 apt_packages=()
-for package in git network-manager curl chromium; do
+for package in git network-manager curl chromium zenity; do
     if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -Fq 'install ok installed'; then
         apt_packages+=("$package")
     fi
@@ -184,6 +184,8 @@ User=$service_user
 WorkingDirectory=$app_dir
 Environment=HOST=$DEFAULT_HOST
 Environment=PORT=$DEFAULT_PORT
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=$service_home/.Xauthority
 ExecStart=$(command -v npm) start
 Restart=on-failure
 RestartSec=5

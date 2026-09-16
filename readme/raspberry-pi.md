@@ -30,7 +30,7 @@ installation, run:
 
 ```bash
 sudo apt update
-sudo apt install -y git chromium network-manager curl
+sudo apt install -y git chromium network-manager curl zenity
 ```
 
 Install Node.js 20 or newer. Raspberry Pi OS may package `npm` separately, so
@@ -142,6 +142,8 @@ User=<pi-user>
 WorkingDirectory=/home/<pi-user>/merekaipresenter
 Environment=HOST=10.42.0.1
 Environment=PORT=3131
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/<pi-user>/.Xauthority
 ExecStart=/usr/bin/npm start
 Restart=on-failure
 RestartSec=5
