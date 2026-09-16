@@ -112,6 +112,11 @@
       color: var(--muted);
     }
 
+    .delete-button {
+      flex: 0 0 auto;
+      color: #b42318;
+    }
+
     .folder-badge,
     .count-badge {
       padding: 4px 8px;

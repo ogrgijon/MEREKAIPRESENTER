@@ -78,6 +78,10 @@ export class ApiService {
     return this.http.post<void>('/api/media-order', { order, hidden });
   }
 
+  deleteMediaFile(path: string): Observable<{ ok: boolean; path: string }> {
+    return this.http.delete<{ ok: boolean; path: string }>(`/api/media-file?path=${encodeURIComponent(path)}`);
+  }
+
   getPlaybackState(): Observable<PlaybackState> {
     return this.http.get<PlaybackState>('/api/playlist');
   }
@@ -104,12 +108,17 @@ export class ApiService {
     return this.http.get<FileBrowserResponse>(`/api/file-browser${query}`);
   }
 
+  createLibraryFolder(parent: string, name: string): Observable<{ ok: boolean; path: string }> {
+    return this.http.post<{ ok: boolean; path: string }>('/api/create-library-folder', { parent, name });
+  }
+
   sendPlaybackCommand(command: PlaybackCommand, index?: number): Observable<void> {
     return this.http.post<void>('/api/playback-command', { command, index });
   }
 
-  uploadMedia(files: File[]): Observable<UploadResponse> {
+  uploadMedia(files: File[], destination: string): Observable<UploadResponse> {
     const formData = new FormData();
+    formData.append('destination', destination);
     for (const file of files) {
       formData.append('files', file, file.name);
     }

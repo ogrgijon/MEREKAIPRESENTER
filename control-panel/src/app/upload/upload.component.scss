@@ -41,6 +41,23 @@ h2 { margin: 0; color: var(--ink); }
 }
 
 .file-input { display: none; }
+.destination-panel {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
+}
+.destination-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.destination-heading strong { overflow: hidden; color: var(--ink); text-overflow: ellipsis; white-space: nowrap; }
+.destination-label { margin: 0 0 0.25rem; color: var(--muted); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
+.destination-create { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.destination-create input { flex: 1 1 220px; min-width: 0; padding: 0.65rem 0.75rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.destination-list { display: grid; gap: 0.35rem; }
+.destination-folder { display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 0.75rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; text-align: left; }
+.destination-folder:hover { background: var(--surface-muted); }
+.destination-folder mat-icon { color: var(--teal); }
+.destination-empty { margin: 0; color: var(--muted); font-size: 0.9rem; }
 .file-list { display: grid; gap: 0.4rem; }
 .file-row {
   display: flex;

@@ -153,6 +153,21 @@ export class MediaOrderComponent implements OnInit {
     else this.hiddenPaths.add(key);
   }
 
+  deleteFile(path: string): void {
+    if (!window.confirm(this.i18n.t('mediaOrder.confirmDelete'))) return;
+
+    this.api.deleteMediaFile(path).subscribe({
+      next: () => {
+        this.items = this.items.filter((item) => item !== path);
+        this.hiddenPaths.delete(path);
+        this.snackBar.open(this.i18n.t('mediaOrder.deleted'), this.i18n.t('ok'), { duration: 3000 });
+      },
+      error: () => {
+        this.snackBar.open(this.i18n.t('mediaOrder.deleteError'), this.i18n.t('ok'), { duration: 5000 });
+      },
+    });
+  }
+
   drop(event: CdkDragDrop<string[]>): void {
     if (this.viewMode === 'folders') {
       this.reorderTopLevelFolders(event.previousIndex, event.currentIndex);

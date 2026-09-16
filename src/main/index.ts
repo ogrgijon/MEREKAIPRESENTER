@@ -34,6 +34,10 @@ import {
 } from "node:child_process";
 
 import {
+    execFileSync,
+} from "node:child_process";
+
+import {
     finished,
 } from "node:stream/promises";
 
@@ -162,34 +166,60 @@ interface FileBrowserEntry {
 }
 
 function fileBrowserRoots(): string[] {
-    if (process.platform === "win32") {
-        return Array.from(
-            { length: 26 },
-            (_, index) => `${String.fromCharCode(65 + index)}:\\`,
-        ).filter((drive) => existsSync(drive));
-    }
-
-    const home = USER_HOME;
-    const roots = [
-        home,
-        "/media",
-        "/run/media",
-        "/mnt",
-        path.join("/media", process.env.USER || ""),
-        path.join("/run/media", process.env.USER || ""),
-    ];
-
-    return Array.from(new Set(roots)).filter(
-        (root) => root && existsSync(root) && statSync(root).isDirectory(),
+    return [USER_HOME, ...removableRoots()].filter((root, index, roots) =>
+        root && roots.indexOf(root) === index && existsSync(root) && statSync(root).isDirectory(),
     );
 }
 
-function isAllowedBrowserPath(candidate: string): boolean {
-    const resolved = path.resolve(candidate);
+function removableRoots(): string[] {
+    if (process.platform === "win32") {
+        try {
+            const output = execFileSync(
+                "powershell.exe",
+                [
+                    "-NoProfile",
+                    "-Command",
+                    "Get-CimInstance Win32_LogicalDisk -Filter 'DriveType = 2' | Select-Object -ExpandProperty DeviceID",
+                ],
+                { encoding: "utf8", windowsHide: true },
+            );
+
+            return output
+                .split(/\r?\n/)
+                .map((drive) => drive.trim())
+                .filter((drive) => /^[A-Z]:$/i.test(drive))
+                .map((drive) => `${drive}\\`);
+        } catch {
+            return [];
+        }
+    }
+
+    const roots: string[] = [];
+    for (const parent of ["/media", "/run/media", "/mnt"]) {
+        if (!existsSync(parent) || !statSync(parent).isDirectory()) continue;
+
+        try {
+            for (const entry of readdirSync(parent, { withFileTypes: true })) {
+                if (entry.isDirectory()) roots.push(path.join(parent, entry.name));
+            }
+        } catch {
+            // Ignore mount parents that the service cannot read.
+        }
+    }
+
+    return roots;
+}
+
+function isEligibleLibraryFolder(folder: string): boolean {
+    const resolved = path.resolve(folder);
     return fileBrowserRoots().some((root) => {
         const resolvedRoot = path.resolve(root);
         return resolved === resolvedRoot || resolved.startsWith(`${resolvedRoot}${path.sep}`);
     });
+}
+
+function isAllowedBrowserPath(candidate: string): boolean {
+    return isEligibleLibraryFolder(candidate);
 }
 
 function listFileBrowserEntries(folder: string): FileBrowserEntry[] {
@@ -1247,6 +1277,7 @@ async function handleMediaUpload(
         return;
     }
 
+    let destinationFolder = mediaFolder;
     const uploaded: string[] = [];
     const rejected: string[] = [];
     const pendingWrites: Promise<void>[] = [];
@@ -1261,6 +1292,23 @@ async function handleMediaUpload(
             },
         });
 
+        busboy.on("field", (fieldName, value) => {
+            if (fieldName !== "destination") return;
+
+            const requestedFolder = value.trim();
+            const resolvedFolder = path.resolve(
+                mediaFolder,
+                requestedFolder,
+            );
+
+            if (!isPathInside(mediaFolder, resolvedFolder)) {
+                uploadError = new Error("Upload folder must be inside the media folder");
+                return;
+            }
+
+            destinationFolder = resolvedFolder;
+        });
+
         busboy.on("file", (fieldName, file, info) => {
             void fieldName;
             const safeName = path.basename(info.filename);
@@ -1271,7 +1319,13 @@ async function handleMediaUpload(
                 return;
             }
 
-            const destination = path.join(mediaFolder, safeName);
+            if (uploadError) {
+                file.resume();
+                return;
+            }
+
+            mkdirSync(destinationFolder, { recursive: true });
+            const destination = path.join(destinationFolder, safeName);
             const writeStream = createWriteStream(destination);
             file.pipe(writeStream);
 
@@ -1572,6 +1626,52 @@ async function handleApi(
     }
 
     // --------------------------------------------------------
+    // DELETE MEDIA FILE
+    // --------------------------------------------------------
+
+    if (
+        pathname === "/api/media-file" &&
+        req.method === "DELETE"
+    ) {
+        try {
+            const mediaFolder = getMediaFolder();
+            const requestedPath = requestUrl.searchParams.get("path");
+
+            if (!mediaFolder || !requestedPath) {
+                sendError(res, 400, "Missing media file path");
+                return true;
+            }
+
+            const absolutePath = path.resolve(mediaFolder, requestedPath);
+            if (
+                !isPathInside(path.resolve(mediaFolder), absolutePath) ||
+                !MEDIA_REGEX.test(absolutePath) ||
+                !existsSync(absolutePath) ||
+                !statSync(absolutePath).isFile()
+            ) {
+                sendError(res, 400, "Invalid media file");
+                return true;
+            }
+
+            unlinkSync(absolutePath);
+
+            const currentOrder = parseStringArraySetting("mediaOrder")
+                .filter((item) => item !== requestedPath);
+            const currentHidden = parseStringArraySetting("mediaHidden")
+                .filter((item) => item !== requestedPath);
+            setSetting("mediaOrder", JSON.stringify(currentOrder));
+            setSetting("mediaHidden", JSON.stringify(currentHidden));
+            broadcast({ type: "settings-changed" });
+            sendJson(res, { ok: true, path: requestedPath });
+        } catch (error) {
+            console.error("Error deleting media file:", error);
+            sendError(res, 400, "Unable to delete media file");
+        }
+
+        return true;
+    }
+
+    // --------------------------------------------------------
     // MEDIA ORDER POST
     // --------------------------------------------------------
 
@@ -1804,6 +1904,43 @@ async function handleApi(
         return true;
     }
 
+    if (
+        pathname === "/api/create-library-folder" &&
+        req.method === "POST"
+    ) {
+        try {
+            const mediaFolder = getMediaFolder();
+            const body = await readJsonBody<{
+                parent?: unknown;
+                name?: unknown;
+            }>(req);
+
+            if (!mediaFolder || typeof body?.name !== "string") {
+                sendError(res, 400, "Invalid library folder");
+                return true;
+            }
+
+            const name = body.name.trim();
+            const parent = typeof body.parent === "string" && body.parent.trim()
+                ? path.resolve(body.parent)
+                : path.resolve(mediaFolder);
+            const folder = path.resolve(parent, name);
+
+            if (!name || !isPathInside(mediaFolder, parent) || !isPathInside(mediaFolder, folder)) {
+                sendError(res, 400, "Folder must be inside the configured media folder");
+                return true;
+            }
+
+            mkdirSync(folder, { recursive: false });
+            sendJson(res, { ok: true, path: folder });
+        } catch (error) {
+            console.error("Error creating library folder:", error);
+            sendError(res, 400, "Unable to create folder");
+        }
+
+        return true;
+    }
+
     // --------------------------------------------------------
     // PLAYBACK COMMAND
     // --------------------------------------------------------
@@ -1937,6 +2074,16 @@ async function handleApi(
                     res,
                     400,
                     "Path is not a directory",
+                );
+
+                return true;
+            }
+
+            if (!isEligibleLibraryFolder(folder)) {
+                sendError(
+                    res,
+                    403,
+                    "Library folder must be inside the user home or a removable drive",
                 );
 
                 return true;

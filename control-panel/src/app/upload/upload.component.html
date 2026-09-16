@@ -23,6 +23,33 @@
       {{ i18n.t('upload.choose') }}
     </button>
 
+    <section class="destination-panel">
+      <div class="destination-heading">
+        <div>
+          <p class="destination-label">{{ i18n.t('upload.destination') }}</p>
+          <strong>{{ destinationFolder || i18n.t('upload.libraryUnavailable') }}</strong>
+        </div>
+        <button mat-stroked-button type="button" (click)="selectDestination(libraryFolder)" [disabled]="isLibraryRoot() || browserLoading || uploading">
+          {{ i18n.t('upload.libraryRoot') }}
+        </button>
+      </div>
+
+      <div class="destination-create">
+        <input [(ngModel)]="newFolderName" [disabled]="creatingFolder || uploading" [placeholder]="i18n.t('upload.newFolderPlaceholder')" (keyup.enter)="createFolder()">
+        <button mat-stroked-button type="button" (click)="createFolder()" [disabled]="!newFolderName.trim() || creatingFolder || uploading">
+          {{ i18n.t('upload.newFolder') }}
+        </button>
+      </div>
+
+      <div class="destination-list" *ngIf="destinationEntries.length">
+        <button class="destination-folder" type="button" *ngFor="let entry of destinationEntries" (click)="selectDestination(entry.path)" [disabled]="browserLoading || uploading">
+          <mat-icon aria-hidden="true">folder</mat-icon>
+          <span>{{ entry.name }}</span>
+        </button>
+      </div>
+      <p class="destination-empty" *ngIf="!browserLoading && !destinationEntries.length">{{ i18n.t('upload.noChildFolders') }}</p>
+    </section>
+
     <div class="file-list" *ngIf="selectedFiles.length">
       <div class="file-row" *ngFor="let file of selectedFiles">
         <span>{{ file.name }}</span>

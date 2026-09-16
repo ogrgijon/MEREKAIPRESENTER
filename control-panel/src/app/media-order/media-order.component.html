@@ -47,6 +47,9 @@
         <button mat-icon-button type="button" class="visibility-button" (click)="$event.stopPropagation(); toggleHidden(path)" [attr.aria-label]="i18n.t(isHidden(path) ? 'mediaOrder.showFile' : 'mediaOrder.hideFile')" [title]="i18n.t(isHidden(path) ? 'mediaOrder.showFile' : 'mediaOrder.hideFile')">
           <mat-icon>{{ isHidden(path) ? 'visibility_off' : 'visibility' }}</mat-icon>
         </button>
+        <button mat-icon-button type="button" class="delete-button" (click)="$event.stopPropagation(); deleteFile(path)" [attr.aria-label]="i18n.t('mediaOrder.deleteFile')" [title]="i18n.t('mediaOrder.deleteFile')">
+          <mat-icon>delete</mat-icon>
+        </button>
       </div>
     </ng-template>
   </div>
