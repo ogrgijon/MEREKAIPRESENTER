@@ -261,6 +261,7 @@ autostart_file="$autostart_dir/merekai-player.desktop"
 player_bin_dir="$service_home/.local/bin"
 player_launcher="$player_bin_dir/merekai-player"
 player_log="$service_home/.local/state/merekaipresenter/player-startup.log"
+player_profile_dir="$service_home/.config/merekaipresenter/chromium-profile"
 autostart_tmp="$(mktemp)"
 player_launcher_tmp="$(mktemp)"
 trap 'rm -f "$service_file" "$autostart_tmp" "$player_launcher_tmp"' EXIT
@@ -278,10 +279,19 @@ until curl --fail --silent "http://${PLAYER_HOST}:${DEFAULT_PORT}/player/" >/dev
     sleep 1
 done
 printf '[%s] Server is ready; starting Chromium\n' "\$(date --iso-8601=seconds)"
-exec "$chromium_command" --kiosk --noerrdialogs --disable-session-crashed-bubble --check-for-update-interval=31536000 "http://${PLAYER_HOST}:${DEFAULT_PORT}/player/"
+exec "$chromium_command" \
+    --kiosk \
+    --noerrdialogs \
+    --no-first-run \
+    --disable-session-crashed-bubble \
+    --password-store=basic \
+    --user-data-dir="$player_profile_dir" \
+    --check-for-update-interval=31536000 \
+    "http://${PLAYER_HOST}:${DEFAULT_PORT}/player/"
 EOF
 sudo install -d -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$player_bin_dir"
 sudo install -d -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$(dirname "$player_log")"
+sudo install -d -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$player_profile_dir"
 sudo install -o "$service_user" -g "$(id -gn "$service_user")" -m 755 "$player_launcher_tmp" "$player_launcher"
 
 append_session_autostart() {
@@ -333,6 +343,29 @@ EOF
             sudo tee -a "$session_config_file" < "$autostart_tmp" >/dev/null
             sudo chown "$service_user":"$(id -gn "$service_user")" "$session_config_file"
         fi
+    fi
+fi
+
+if confirm "Auto-hide the desktop taskbar?"; then
+    lxpanel_config="$service_home/.config/lxpanel/LXDE-pi/panels/panel"
+    if [[ -f "$lxpanel_config" ]]; then
+        if sudo grep -Fq 'autohide=' "$lxpanel_config"; then
+            sudo sed -i 's/^\([[:space:]]*\)autohide=.*/\1autohide=1/' "$lxpanel_config"
+        else
+            sudo sed -i '0,/^[[:space:]]*}/ s//    autohide=1\n}/' "$lxpanel_config"
+        fi
+        sudo chown "$service_user":"$(id -gn "$service_user")" "$lxpanel_config"
+        printf '%s\n' "LXPanel taskbar auto-hide enabled. Log out and back in to apply it."
+    elif [[ -f "$service_home/.config/wf-panel-pi.ini" ]]; then
+        if sudo grep -Fq 'autohide=' "$service_home/.config/wf-panel-pi.ini"; then
+            sudo sed -i 's/^\([[:space:]]*\)autohide=.*/\1autohide=true/' "$service_home/.config/wf-panel-pi.ini"
+            sudo chown "$service_user":"$(id -gn "$service_user")" "$service_home/.config/wf-panel-pi.ini"
+            printf '%s\n' "Wayfire panel auto-hide enabled. Log out and back in to apply it."
+        else
+            printf '%s\n' "Wayfire panel config found, but it has no auto-hide setting; configure it manually in: $service_home/.config/wf-panel-pi.ini"
+        fi
+    else
+        printf '%s\n' "No supported taskbar configuration was found; configure auto-hide in the desktop panel settings."
     fi
 fi
 
