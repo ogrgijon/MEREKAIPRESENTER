@@ -392,6 +392,24 @@ function toMediaUrl(
 // ============================================================
 
 async function init(): Promise<void> {
+    // Ensure the mouse cursor is hidden in kiosk mode across X11/Wayland
+    // Re-apply periodically to counteract any compositor/browser overrides.
+    try {
+        const enforceCursorHidden = (): void => {
+            try {
+                document.documentElement.style.cursor = "none";
+                document.body.style.cursor = "none";
+            } catch {}
+        };
+
+        enforceCursorHidden();
+        // Reapply every second.
+        setInterval(enforceCursorHidden, 1000);
+
+        // Also ensure any mousemove doesn't re-show the cursor by forcing none.
+        window.addEventListener("mousemove", () => enforceCursorHidden(), { passive: true });
+    } catch {}
+
     currentFolder =
         (await api.getSetting(
             "mediaFolder",
