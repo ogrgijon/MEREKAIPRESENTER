@@ -42,7 +42,7 @@ require_command sudo
 command -v apt-get >/dev/null 2>&1 || fail "This wizard requires a Debian-based Raspberry Pi OS with apt-get."
 
 apt_packages=()
-for package in git network-manager curl chromium zenity; do
+for package in git network-manager curl chromium zenity unclutter; do
     if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -Fq 'install ok installed'; then
         apt_packages+=("$package")
     fi
@@ -279,6 +279,10 @@ until curl --fail --silent "http://${PLAYER_HOST}:${DEFAULT_PORT}/player/" >/dev
     sleep 1
 done
 printf '[%s] Server is ready; starting Chromium\n' "\$(date --iso-8601=seconds)"
+# Launch unclutter (if available) to hide the mouse cursor in X11 sessions.
+if command -v unclutter >/dev/null 2>&1; then
+    setsid unclutter -idle 0.5 -root >/dev/null 2>&1 || true
+fi
 "$chromium_command" \
     --kiosk \
     --hide-cursor \
@@ -368,6 +372,61 @@ if confirm "Auto-hide the desktop taskbar?"; then
     else
         printf '%s\n' "No supported taskbar configuration was found; configure auto-hide in the desktop panel settings."
     fi
+fi
+
+# Create a minimal LightDM kiosk session that starts Chromium directly and enables autologin.
+# This avoids showing the full desktop on startup and provides a clean kiosk experience.
+if [[ -d /etc/lightdm ]] || command -v lightdm >/dev/null 2>&1; then
+    log "Creating LightDM kiosk session and enabling autologin"
+    kiosk_tmp="$(mktemp)"
+    kiosk_desktop_tmp="$(mktemp)"
+    cat > "$kiosk_tmp" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+# Disable screen blanking
+xset s off
+xset s noblank
+xset -dpms
+# Wait for the player server to be ready
+until curl --fail --silent "http://127.0.0.1:${DEFAULT_PORT}/player/" >/dev/null 2>&1; do
+    sleep 1
+done
+# Start unclutter to hide the mouse cursor (if available)
+if command -v unclutter >/dev/null 2>&1; then
+    setsid unclutter -idle 0.5 -root >/dev/null 2>&1 || true
+fi
+exec "$chromium_command" \
+    --kiosk \
+    --noerrdialogs \
+    --no-first-run \
+    --disable-session-crashed-bubble \
+    --password-store=basic \
+    --user-data-dir="$player_profile_dir" \
+    --check-for-update-interval=31536000 \
+    "http://127.0.0.1:${DEFAULT_PORT}/player/"
+EOF
+    cat > "$kiosk_desktop_tmp" <<EOF
+[Desktop Entry]
+Name=Merekai Kiosk
+Comment=Kiosk session for Merekai Presenter
+Exec=/usr/local/bin/merekai-kiosk-session
+Type=Application
+EOF
+    sudo install -o root -g root -m 755 "$kiosk_tmp" /usr/local/bin/merekai-kiosk-session
+    sudo install -o root -g root -m 644 "$kiosk_desktop_tmp" /usr/share/xsessions/merekai-kiosk.desktop
+    rm -f "$kiosk_tmp" "$kiosk_desktop_tmp"
+
+    sudo mkdir -p /etc/lightdm/lightdm.conf.d
+    sudo bash -c "cat > /etc/lightdm/lightdm.conf.d/50-mereka-kiosk.conf <<EOL
+[Seat:*]
+autologin-user=$service_user
+autologin-session=merekai-kiosk
+autologin-user-timeout=0
+xserver-command=X -s 0 -nocursor
+EOL"
+    printf '%s\n' "LightDM kiosk session installed. Reboot to apply autologin and kiosk session."
+else
+    printf '%s\n' "LightDM not found; skipping kiosk-session installation. Configure your display manager to autologin into a kiosk session instead."
 fi
 
 if [[ "$use_hotspot" == true ]]; then
