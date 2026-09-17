@@ -279,8 +279,9 @@ until curl --fail --silent "http://${PLAYER_HOST}:${DEFAULT_PORT}/player/" >/dev
     sleep 1
 done
 printf '[%s] Server is ready; starting Chromium\n' "\$(date --iso-8601=seconds)"
-exec "$chromium_command" \
+"$chromium_command" \
     --kiosk \
+    --hide-cursor \
     --noerrdialogs \
     --no-first-run \
     --disable-session-crashed-bubble \
