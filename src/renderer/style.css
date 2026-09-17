@@ -57,3 +57,8 @@ body {
   padding: 10px 20px;
   border-radius: 5px;
 }
+
+/* Kiosk: hide the mouse cursor for fullscreen player */
+html, body, #container, #img-media, #video-media, #overlays, .message {
+  cursor: none !important;
+}
