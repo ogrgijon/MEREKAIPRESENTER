@@ -55,6 +55,7 @@ if ((${#apt_packages[@]} > 0)); then
 fi
 
 require_command systemctl
+require_command systemd-run
 require_command nmcli
 require_command curl
 require_command git
@@ -191,8 +192,6 @@ if [[ "$use_hotspot" == true ]]; then
         ipv6.method disabled
     fi
 
-    confirm "Activate the hotspot now? This may disconnect the current Wi-Fi connection." || fail "The hotspot must be activated before the server can start."
-    sudo nmcli connection up "$DEFAULT_CONNECTION"
 fi
 
 log "Installing the systemd service"
@@ -335,6 +334,20 @@ EOF
             sudo chown "$service_user":"$(id -gn "$service_user")" "$session_config_file"
         fi
     fi
+fi
+
+if [[ "$use_hotspot" == true ]]; then
+    confirm "Activate the hotspot after the installer finishes? This will disconnect the current Wi-Fi connection." ||
+        fail "The hotspot was configured but not activated. Run: sudo nmcli connection up $DEFAULT_CONNECTION"
+
+    log "Scheduling hotspot activation"
+    sudo systemd-run \
+        --unit=merekai-hotspot-activation \
+        --collect \
+        --no-block \
+        --description="Activate the Merekai Presenter Wi-Fi hotspot" \
+        "$(command -v nmcli)" connection up "$DEFAULT_CONNECTION"
+    printf '%s\n' "The hotspot will activate after this installer exits; the current client may disconnect."
 fi
 
 log "Setup complete"
