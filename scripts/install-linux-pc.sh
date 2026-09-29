@@ -158,9 +158,20 @@ until curl --fail --silent --max-time 2 "$PLAYER_URL" >/dev/null; do
     sleep 1
 done
 
-settings_json="\$(curl --fail --silent --show-error --max-time 2 "$PANEL_URL/api/settings")"
-auto_start="\$(printf '%s' "\$settings_json" | \
-    node -p 'String(JSON.parse(require("fs").readFileSync(0, "utf8")).autoStartPlayer).trim().toLowerCase()')"
+while true; do
+    settings_json="\$(curl --fail --silent --show-error --max-time 2 "${PANEL_URL}api/settings" 2>&1 || true)"
+    auto_start="\$(printf '%s' "\$settings_json" | \
+        node -p 'String(JSON.parse(require("fs").readFileSync(0, "utf8")).autoStartPlayer).trim().toLowerCase()' 2>/dev/null || true)"
+
+    if [[ "\$auto_start" == "true" || "\$auto_start" == "false" ]]; then
+        break
+    fi
+
+    printf '[%s] Waiting for valid settings from %s/api/settings\n' \
+        "\$(date --iso-8601=seconds)" "${PANEL_URL}api/settings"
+    sleep 2
+done
+
 if [[ "\$auto_start" == "false" ]]; then
     printf '[%s] Auto-start disabled in the control panel\n' "\$(date --iso-8601=seconds)"
     exit 0

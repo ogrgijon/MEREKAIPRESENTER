@@ -106,7 +106,7 @@ else
     warn "Player does not respond at $PLAYER_URL"
 fi
 
-settings_json="$(curl --fail --silent --max-time 3 "$PANEL_URL/api/settings" 2>/dev/null || true)"
+settings_json="$(curl --fail --silent --max-time 3 "${PANEL_URL}api/settings" 2>/dev/null || true)"
 if [[ -n "$settings_json" ]] && command -v node >/dev/null 2>&1; then
     auto_start="$(printf '%s' "$settings_json" | node -p 'String(JSON.parse(require("fs").readFileSync(0, "utf8")).autoStartPlayer).trim().toLowerCase()')"
     if [[ "$auto_start" != "false" ]]; then
