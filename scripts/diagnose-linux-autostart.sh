@@ -70,8 +70,12 @@ fi
 if [[ -f "$PLAYER_LOG" ]]; then
     if grep -q "Starting Chromium kiosk" "$PLAYER_LOG"; then
         ok "Player launcher has started Chromium"
+    elif grep -q "Auto-start disabled" "$PLAYER_LOG"; then
+        warn "Player launcher ran, but Auto-start is disabled in the control panel"
+    elif grep -q "Merekai player autostart" "$PLAYER_LOG"; then
+        warn "Player launcher ran but did not reach Chromium startup"
     else
-        warn "Player launcher has not logged a Chromium start"
+        warn "Player launcher has not run since the log was created"
     fi
 fi
 
