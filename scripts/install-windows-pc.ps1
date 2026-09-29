@@ -40,6 +40,7 @@ Set-Location $appRoot
 $launcherDirectory = Join-Path $env:LOCALAPPDATA "MerekaiPresenter"
 $launcherPath = Join-Path $launcherDirectory "start-control-panel.ps1"
 $playerLauncherPath = Join-Path $launcherDirectory "start-player.ps1"
+$iconPath = Join-Path $appRoot "iconoMerekaiGallery.ico"
 New-Item -ItemType Directory -Force $launcherDirectory | Out-Null
 
 $escapedAppRoot = $appRoot.Replace("'", "''")
@@ -149,6 +150,7 @@ $shortcut.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershe
 $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$launcherPath`""
 $shortcut.WorkingDirectory = $appRoot
 $shortcut.Description = "Open the Merekai Presenter control panel"
+$shortcut.IconLocation = "$iconPath,0"
 $shortcut.Save()
 
 $startupPath = [Environment]::GetFolderPath("Startup")
@@ -158,6 +160,7 @@ $playerShortcut.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\po
 $playerShortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$playerLauncherPath`""
 $playerShortcut.WorkingDirectory = $appRoot
 $playerShortcut.Description = "Start the Merekai Presenter player in fullscreen mode"
+$playerShortcut.IconLocation = "$iconPath,0"
 $playerShortcut.WindowStyle = 7
 $playerShortcut.Save()
 

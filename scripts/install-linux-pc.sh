@@ -86,6 +86,7 @@ readonly PANEL_LAUNCHER="$SERVICE_HOME/.local/bin/merekai-control-panel"
 readonly PLAYER_LAUNCHER="$SERVICE_HOME/.local/bin/merekai-player"
 readonly PLAYER_LOG="$SERVICE_HOME/.local/state/merekaipresenter/player-autostart.log"
 readonly APPLICATION_ENTRY="$SERVICE_HOME/.local/share/applications/merekai-control-panel.desktop"
+readonly APPLICATION_ICON="$SERVICE_HOME/.local/share/icons/hicolor/256x256/apps/merekai-presenter.png"
 readonly DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || printf '%s/Desktop' "$SERVICE_HOME")"
 readonly DESKTOP_ENTRY="$DESKTOP_DIR/Merekai Presenter Control Panel.desktop"
 readonly AUTOSTART_ENTRY="$SERVICE_HOME/.config/autostart/merekai-player.desktop"
@@ -115,8 +116,10 @@ mkdir -p \
     "$(dirname "$PANEL_LAUNCHER")" \
     "$(dirname "$PLAYER_LOG")" \
     "$(dirname "$APPLICATION_ENTRY")" \
+    "$(dirname "$APPLICATION_ICON")" \
     "$DESKTOP_DIR" \
     "$(dirname "$AUTOSTART_ENTRY")"
+cp "$APP_DIR/iconoMerekaiGallery.png" "$APPLICATION_ICON"
 cat > "$PANEL_LAUNCHER" <<EOF
 #!/usr/bin/env bash
 set -Eeuo pipefail
@@ -168,6 +171,7 @@ Comment=Open the Merekai Presenter control panel
 Exec=$PANEL_LAUNCHER
 Terminal=false
 Categories=AudioVideo;
+Icon=$APPLICATION_ICON
 EOF
 
 cp "$APPLICATION_ENTRY" "$DESKTOP_ENTRY"

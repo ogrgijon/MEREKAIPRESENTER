@@ -202,6 +202,15 @@ systemctl status merekai-presenter.service
 Run the installer with `--update` after changing the launcher or installing a
 new version so the generated autostart files are refreshed.
 
+For a read-only diagnostic on the Debian PC, run from the repository root:
+
+```bash
+bash scripts/diagnose-linux-autostart.sh
+```
+
+It reports the exact failing layer without changing the system. Share its
+output together with the launcher log and service log when troubleshooting.
+
 ## 5. Verify and maintain the presenter
 
 1. Confirm Chromium opens the player fullscreen after login.
