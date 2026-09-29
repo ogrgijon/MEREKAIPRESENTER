@@ -251,6 +251,7 @@ function listFileBrowserEntries(folder: string): FileBrowserEntry[] {
 
 const SETTINGS_KEYS = [
     "mediaFolder",
+    "autoStartPlayer",
     "slideDurationSeconds",
     "shuffle",
     "volume",
@@ -446,6 +447,8 @@ function getAllSettings(): Record<string, string> {
         values[key] =
             key === "mediaFolder"
                 ? getSetting(key) || DEFAULT_MEDIA_FOLDER
+                : key === "autoStartPlayer"
+                    ? getSetting(key) ?? "true"
                 : getSetting(key) ?? "";
     }
 

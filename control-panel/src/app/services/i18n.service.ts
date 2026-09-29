@@ -5,10 +5,14 @@ type Lang = 'en' | 'es';
 
 const TRANSLATIONS: Record<Lang, Record<string, string>> = {
   en: {
-    'app.title': 'MerekaiGallery',
+    'app.title': 'Merekai Presenter',
     'toolbar.toggleTheme': 'Toggle theme',
     'toolbar.openPlayer': 'Open player in new window',
     'toolbar.player': 'Player',
+    'toolbar.autoStart': 'Auto-start',
+    'toolbar.autoStartAria': 'Start the player automatically when the desktop session starts',
+    'toolbar.autoStartSaved': 'Auto-start preference saved.',
+    'toolbar.autoStartFailed': 'Unable to save the auto-start preference.',
     'settings.nativePickerError': 'Unable to open the native picker.',
     'settings.libraryEmpty': 'No media files are available in the library.',
     'settings.chooseLibraryFile': 'Choose a file from the library.',
@@ -352,10 +356,14 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'overlay.layer': 'Layer',
   },
   es: {
-    'app.title': 'MerekaiGallery',
+    'app.title': 'Merekai Presenter',
     'toolbar.toggleTheme': 'Cambiar tema',
     'toolbar.openPlayer': 'Abrir reproductor en una ventana nueva',
     'toolbar.player': 'Reproductor',
+    'toolbar.autoStart': 'Inicio automático',
+    'toolbar.autoStartAria': 'Iniciar el reproductor automáticamente al iniciar la sesión del escritorio',
+    'toolbar.autoStartSaved': 'Preferencia de inicio automático guardada.',
+    'toolbar.autoStartFailed': 'No se pudo guardar la preferencia de inicio automático.',
     'settings.nativePickerError': 'No se pudo abrir el selector nativo.',
     'settings.libraryEmpty': 'No hay archivos multimedia disponibles en la biblioteca.',
     'settings.chooseLibraryFile': 'Elige un archivo de la biblioteca.',

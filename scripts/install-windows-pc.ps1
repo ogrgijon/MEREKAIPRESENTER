@@ -39,6 +39,7 @@ Set-Location $appRoot
 
 $launcherDirectory = Join-Path $env:LOCALAPPDATA "MerekaiPresenter"
 $launcherPath = Join-Path $launcherDirectory "start-control-panel.ps1"
+$playerLauncherPath = Join-Path $launcherDirectory "start-player.ps1"
 New-Item -ItemType Directory -Force $launcherDirectory | Out-Null
 
 $escapedAppRoot = $appRoot.Replace("'", "''")
@@ -78,6 +79,68 @@ Start-Process $panelUrl
 '@.Replace('__APP_ROOT__', $escapedAppRoot)
 Set-Content -Path $launcherPath -Value $launcherContent -Encoding UTF8
 
+$playerLauncherContent = @'
+$ErrorActionPreference = "Stop"
+$appRoot = '__APP_ROOT__'
+$playerUrl = "http://127.0.0.1:3131/player/"
+$panelUrl = "http://127.0.0.1:3131/"
+
+try {
+    Invoke-WebRequest -Uri $panelUrl -UseBasicParsing -TimeoutSec 2 | Out-Null
+    $ready = $true
+} catch {
+    $ready = $false
+}
+
+if (-not $ready) {
+    Start-Process -FilePath "npm.cmd" -ArgumentList "start" -WorkingDirectory $appRoot -WindowStyle Hidden
+}
+
+$ready = $false
+1..60 | ForEach-Object {
+    if (-not $ready) {
+        Start-Sleep -Seconds 1
+        try {
+            Invoke-WebRequest -Uri $playerUrl -UseBasicParsing -TimeoutSec 2 | Out-Null
+            $ready = $true
+        } catch {
+        }
+    }
+}
+
+if (-not $ready) {
+    throw "Merekai Presenter did not start on $playerUrl."
+}
+
+$settings = Invoke-RestMethod -Uri "$panelUrl/api/settings"
+if ($settings.autoStartPlayer -ne "true") {
+    exit 0
+}
+
+$browser = @(
+    "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
+    "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
+    "$env:LOCALAPPDATA\Microsoft\Edge\Application\msedge.exe",
+    "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+    "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+    "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
+) | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+if (-not $browser) {
+    throw "Microsoft Edge or Google Chrome was not found."
+}
+
+$profile = Join-Path $env:LOCALAPPDATA "MerekaiPresenter\browser-profile"
+Start-Process -FilePath $browser -ArgumentList @(
+    "--kiosk",
+    "--no-first-run",
+    "--disable-session-crashed-bubble",
+    "--user-data-dir=$profile",
+    $playerUrl
+)
+'@.Replace('__APP_ROOT__', $escapedAppRoot)
+Set-Content -Path $playerLauncherPath -Value $playerLauncherContent -Encoding UTF8
+
 $desktopPath = [Environment]::GetFolderPath("Desktop")
 $shortcutPath = Join-Path $desktopPath "Merekai Presenter Control Panel.lnk"
 $shell = New-Object -ComObject WScript.Shell
@@ -87,6 +150,16 @@ $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$launcherPath`
 $shortcut.WorkingDirectory = $appRoot
 $shortcut.Description = "Open the Merekai Presenter control panel"
 $shortcut.Save()
+
+$startupPath = [Environment]::GetFolderPath("Startup")
+$playerShortcutPath = Join-Path $startupPath "Merekai Presenter Player.lnk"
+$playerShortcut = $shell.CreateShortcut($playerShortcutPath)
+$playerShortcut.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+$playerShortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$playerLauncherPath`""
+$playerShortcut.WorkingDirectory = $appRoot
+$playerShortcut.Description = "Start the Merekai Presenter player in fullscreen mode"
+$playerShortcut.WindowStyle = 7
+$playerShortcut.Save()
 
 if ($Update) {
     $appRootPattern = [regex]::Escape($appRoot)
@@ -104,3 +177,4 @@ Write-Host ""
 Write-Host "Merekai Presenter is installed."
 Write-Host "Control panel: http://127.0.0.1:3131/"
 Write-Host "Desktop shortcut: $shortcutPath"
+Write-Host "Player autostart: $playerShortcutPath"

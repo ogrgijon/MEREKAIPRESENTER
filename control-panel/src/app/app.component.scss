@@ -157,6 +157,32 @@
   color: var(--nav-accent);
 }
 
+.autostart-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--nav-border);
+  border-radius: 11px;
+  color: var(--nav-accent);
+  background: var(--nav-panel);
+}
+
+.autostart-control mat-icon {
+  color: inherit;
+}
+
+.autostart-control mat-slide-toggle {
+  color: var(--nav-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.autostart-control-saving { opacity: 0.65; }
+
 .theme-toggle:hover,
 .player-toggle:hover,
 .lang-toggle:hover { background: rgba(255, 255, 255, 0.15); }
@@ -203,6 +229,8 @@
   .brand-subtitle { display: none; }
   .toolbar-actions { gap: 0.25rem; }
   .toolbar-actions button span { display: none; }
+  .autostart-control { padding-inline: 0.45rem; }
+  .autostart-control mat-slide-toggle { font-size: 0.6rem; }
   .transport-button .transport-button-face { padding-inline: 0.3rem; font-size: 0.62rem; }
   .transport-button mat-icon { display: none; }
 }

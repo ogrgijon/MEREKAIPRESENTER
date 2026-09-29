@@ -49,9 +49,17 @@ bash scripts/install-linux-pc.sh
 ```
 
 It installs the Debian packages, builds the application, creates the
-`systemd` service, and places a **Merekai Presenter Control Panel** shortcut in
-the desktop and application menu. The service starts automatically at boot.
-The manual steps below explain the same setup when you need to customize it.
+`systemd` service, places a **Merekai Presenter Control Panel** shortcut in the
+desktop and application menu, and registers the fullscreen player in the
+desktop session's autostart. The server starts at boot and the player waits for
+it before opening Chromium in kiosk mode. A graphical user session must still
+be available; configure desktop autologin separately if the PC must start
+without manual sign-in. The manual steps below explain the same setup when you
+need to customize it.
+
+The **Auto-start** switch in the panel toolbar is enabled by default. Turn it
+off to keep the fullscreen player closed on the next desktop login; the server
+and control panel remain available.
 
 To update an existing installation, run this from the repository root. It
 performs a fast-forward Git update, reinstalls dependencies, rebuilds the

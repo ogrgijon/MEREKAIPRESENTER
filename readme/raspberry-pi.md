@@ -49,6 +49,10 @@ The option expects a clean Git checkout. If local changes or uncommitted files
 would prevent a fast-forward update, Git stops safely instead of overwriting
 them.
 
+The **Auto-start** switch in the control-panel toolbar is enabled by default.
+When it is disabled, the kiosk session keeps the server and panel available but
+does not open Chromium until the switch is enabled again.
+
 ## 1. Install the Pi prerequisites
 
 Connect the Pi to the Internet temporarily. The wizard installs Node.js 20 or

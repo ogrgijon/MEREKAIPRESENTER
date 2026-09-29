@@ -6,6 +6,7 @@ readonly APP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly SERVICE_USER="${SUDO_USER:-${USER}}"
 readonly SERVICE_HOME="$(getent passwd "$SERVICE_USER" | cut -d: -f6)"
 readonly PANEL_URL="http://127.0.0.1:3131/"
+readonly PLAYER_URL="http://127.0.0.1:3131/player/"
 update_mode=false
 
 case "${1:-}" in
@@ -66,6 +67,14 @@ fi
 command -v node >/dev/null 2>&1 || fail "Node.js could not be installed."
 command -v npm >/dev/null 2>&1 || fail "npm could not be installed."
 
+if command -v chromium >/dev/null 2>&1; then
+    readonly CHROMIUM_COMMAND="$(command -v chromium)"
+elif command -v chromium-browser >/dev/null 2>&1; then
+    readonly CHROMIUM_COMMAND="$(command -v chromium-browser)"
+else
+    fail "Chromium could not be installed."
+fi
+
 log "Installing and building Merekai Presenter"
 cd "$APP_DIR"
 npm install
@@ -74,9 +83,11 @@ npm run build
 
 readonly NPM_COMMAND="$(command -v npm)"
 readonly PANEL_LAUNCHER="$SERVICE_HOME/.local/bin/merekai-control-panel"
+readonly PLAYER_LAUNCHER="$SERVICE_HOME/.local/bin/merekai-player"
 readonly APPLICATION_ENTRY="$SERVICE_HOME/.local/share/applications/merekai-control-panel.desktop"
 readonly DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || printf '%s/Desktop' "$SERVICE_HOME")"
 readonly DESKTOP_ENTRY="$DESKTOP_DIR/Merekai Presenter Control Panel.desktop"
+readonly AUTOSTART_ENTRY="$SERVICE_HOME/.config/autostart/merekai-player.desktop"
 
 log "Installing the Merekai server service"
 sudo tee /etc/systemd/system/merekai-presenter.service >/dev/null <<EOF
@@ -99,7 +110,11 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-mkdir -p "$(dirname "$PANEL_LAUNCHER")" "$(dirname "$APPLICATION_ENTRY")" "$DESKTOP_DIR"
+mkdir -p \
+    "$(dirname "$PANEL_LAUNCHER")" \
+    "$(dirname "$APPLICATION_ENTRY")" \
+    "$DESKTOP_DIR" \
+    "$(dirname "$AUTOSTART_ENTRY")"
 cat > "$PANEL_LAUNCHER" <<EOF
 #!/usr/bin/env bash
 set -Eeuo pipefail
@@ -111,6 +126,28 @@ done
 exec xdg-open "$PANEL_URL"
 EOF
 chmod +x "$PANEL_LAUNCHER"
+
+cat > "$PLAYER_LAUNCHER" <<EOF
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+until curl --fail --silent --max-time 2 "$PLAYER_URL" >/dev/null; do
+    sleep 1
+done
+
+auto_start="$(curl --fail --silent --max-time 2 "$PANEL_URL/api/settings" | \
+    node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).autoStartPlayer === "true"')"
+[[ "$auto_start" == "true" ]] || exit 0
+
+exec "$CHROMIUM_COMMAND" \
+    --kiosk \
+    --no-first-run \
+    --disable-session-crashed-bubble \
+    --disable-infobars \
+    --user-data-dir="\$HOME/.config/merekaipresenter/chromium-profile" \
+    "$PLAYER_URL"
+EOF
+chmod +x "$PLAYER_LAUNCHER"
 
 cat > "$APPLICATION_ENTRY" <<EOF
 [Desktop Entry]
@@ -124,6 +161,16 @@ EOF
 
 cp "$APPLICATION_ENTRY" "$DESKTOP_ENTRY"
 chmod +x "$APPLICATION_ENTRY" "$DESKTOP_ENTRY"
+
+cat > "$AUTOSTART_ENTRY" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Merekai Presenter Player
+Comment=Start the Merekai Presenter player in fullscreen mode
+Exec=$PLAYER_LAUNCHER
+Terminal=false
+X-GNOME-Autostart-enabled=true
+EOF
 
 sudo systemctl daemon-reload
 if [[ "$update_mode" == true ]]; then

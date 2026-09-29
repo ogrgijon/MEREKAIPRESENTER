@@ -1,6 +1,6 @@
 <mat-toolbar class="app-toolbar">
   <div class="brand-lockup">
-    <img class="brand-mark" src="iconoMerekaiGallery.png" alt="MerekaiGallery">
+    <img class="brand-mark" src="iconoMerekaiGallery.png" alt="Merekai Presenter logo">
     <div class="brand-copy">
       <span class="brand-kicker">Visual media studio</span>
       <span class="brand">{{ i18n.t('app.title') }}</span>
@@ -24,6 +24,16 @@
     }
   </div>
   <div class="toolbar-actions">
+    <div class="autostart-control" [class.autostart-control-saving]="savingAutoStart">
+      <mat-icon aria-hidden="true">{{ autoStartPlayer ? 'power' : 'power_off' }}</mat-icon>
+      <mat-slide-toggle
+        [checked]="autoStartPlayer"
+        [disabled]="savingAutoStart"
+        (change)="setAutoStartPlayer($event.checked)"
+        [title]="i18n.t('toolbar.autoStartAria')"
+        [attr.aria-label]="i18n.t('toolbar.autoStartAria')"
+      >{{ i18n.t('toolbar.autoStart') }}</mat-slide-toggle>
+    </div>
     <button mat-stroked-button class="player-toggle" (click)="openPlayer()" [title]="i18n.t('toolbar.openPlayer')" [attr.aria-label]="i18n.t('toolbar.openPlayer')">
       <mat-icon aria-hidden="true">open_in_new</mat-icon>
       <span>{{ i18n.t('toolbar.player') }}</span>

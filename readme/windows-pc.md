@@ -43,8 +43,13 @@ powershell.exe -ExecutionPolicy Bypass -File .\scripts\install-windows-pc.ps1
 It installs the project dependencies, builds the application, and places a
 **Merekai Presenter Control Panel** shortcut on the Windows desktop. Opening
 the shortcut starts the local server when necessary and opens the panel in the
-default browser. The manual steps below explain the same setup when you need
-to customize it.
+default browser. It also creates a Windows `Startup` shortcut that starts the
+player in Edge or Chrome kiosk mode after the user signs in. The manual steps
+below explain the same setup when you need to customize it.
+
+The **Auto-start** switch in the panel toolbar is enabled by default. Turn it
+off to keep the fullscreen player closed on the next Windows sign-in; the
+server and control panel remain available.
 
 To update an existing installation, run this from the repository root. It
 performs a fast-forward Git update, reinstalls dependencies, and rebuilds the

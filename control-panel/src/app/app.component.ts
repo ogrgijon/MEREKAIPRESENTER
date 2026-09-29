@@ -1,10 +1,11 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -25,6 +26,7 @@ import { I18nService } from './services/i18n.service';
     MatTabsModule,
     MatButtonModule,
     MatIconModule,
+    MatSlideToggleModule,
     MatSnackBarModule,
     MatDialogModule,
     SettingsComponent,
@@ -39,10 +41,12 @@ import { I18nService } from './services/i18n.service';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   @ViewChild(MediaOrderComponent) private mediaOrder?: MediaOrderComponent;
 
   darkTheme = false;
+  autoStartPlayer = true;
+  savingAutoStart = false;
   readonly transportButtons: Array<{ labelKey: string; command: PlaybackCommand; accent?: boolean }> = [
     { labelKey: 'transport.back', command: 'back' },
     { labelKey: 'transport.play', command: 'play', accent: true },
@@ -59,6 +63,14 @@ export class AppComponent {
     public readonly i18n: I18nService,
   ) {}
 
+  ngOnInit(): void {
+    this.api.getSettings().subscribe({
+      next: (settings) => {
+        this.autoStartPlayer = settings['autoStartPlayer'] !== 'false';
+      },
+    });
+  }
+
   openAccessDialog(): void {
     this.dialog.open(AccessDialogComponent, { width: 'min(460px, calc(100vw - 32px))' });
   }
@@ -70,6 +82,24 @@ export class AppComponent {
 
   toggleLanguage(): void {
     this.i18n.toggleLanguage();
+  }
+
+  setAutoStartPlayer(enabled: boolean): void {
+    const previousValue = this.autoStartPlayer;
+    this.autoStartPlayer = enabled;
+    this.savingAutoStart = true;
+
+    this.api.saveSettings({ autoStartPlayer: String(enabled) }).subscribe({
+      next: () => {
+        this.savingAutoStart = false;
+        this.snackBar.open(this.i18n.t('toolbar.autoStartSaved'), this.i18n.t('ok'), { duration: 2200 });
+      },
+      error: () => {
+        this.autoStartPlayer = previousValue;
+        this.savingAutoStart = false;
+        this.snackBar.open(this.i18n.t('toolbar.autoStartFailed'), this.i18n.t('ok'), { duration: 3000 });
+      },
+    });
   }
 
   openPlayer(): void {

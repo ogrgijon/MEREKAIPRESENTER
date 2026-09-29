@@ -255,6 +255,7 @@ install_kiosk_session() {
 set -Eeuo pipefail
 
 readonly SERVER_URL="http://127.0.0.1:${DEFAULT_PORT}/player/"
+readonly SETTINGS_URL="http://127.0.0.1:${DEFAULT_PORT}/api/settings"
 readonly CHROMIUM="$chromium_command"
 readonly PROFILE_DIR="$player_profile_dir"
 readonly LOG_FILE="$player_log"
@@ -286,6 +287,22 @@ until curl \
 done
 
 printf '[%s] Merekai server is ready\\n' "\$(date --iso-8601=seconds)"
+
+# Keep the kiosk session alive while the control-panel switch is disabled.
+while true; do
+    auto_start="\$(curl \
+        --fail \
+        --silent \
+        --max-time 2 \
+        "\$SETTINGS_URL" | \
+        node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).autoStartPlayer === "true"')"
+
+    [[ "\$auto_start" == "true" ]] && break
+
+    printf '[%s] Player auto-start is disabled; waiting for the control-panel setting\\n' \
+        "\$(date --iso-8601=seconds)"
+    sleep 10
+done
 
 # Kill an old Chromium instance belonging to this user if one exists.
 pkill -u "\$(id -u)" -f '[c]hromium.*127\\.0\\.0\\.1:${DEFAULT_PORT}/player/' \
