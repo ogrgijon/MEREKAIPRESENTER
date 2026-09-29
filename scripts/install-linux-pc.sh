@@ -7,7 +7,6 @@ readonly SERVICE_USER="${SUDO_USER:-${USER}}"
 readonly SERVICE_HOME="$(getent passwd "$SERVICE_USER" | cut -d: -f6)"
 readonly PANEL_URL="http://127.0.0.1:3131/"
 readonly PLAYER_URL="http://127.0.0.1:3131/player/"
-readonly DESKTOP_ENVIRONMENT="${XDG_CURRENT_DESKTOP:-${DESKTOP_SESSION:-}}"
 update_mode=false
 
 if [[ "$SERVICE_USER" == "root" ]]; then
@@ -92,7 +91,6 @@ readonly NPM_COMMAND="$(command -v npm)"
 readonly PANEL_LAUNCHER="$SERVICE_HOME/.local/bin/merekai-control-panel"
 readonly PLAYER_LAUNCHER="$SERVICE_HOME/.local/bin/merekai-player"
 readonly PLAYER_LOG="$SERVICE_HOME/.local/state/merekaipresenter/player-autostart.log"
-readonly PLAYER_SERVICE="$SERVICE_HOME/.config/systemd/user/merekai-player.service"
 readonly APPLICATION_ENTRY="$SERVICE_HOME/.local/share/applications/merekai-control-panel.desktop"
 readonly APPLICATION_ICON="$SERVICE_HOME/.local/share/icons/hicolor/256x256/apps/merekai-presenter.png"
 readonly DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || printf '%s/Desktop' "$SERVICE_HOME")"
@@ -100,6 +98,12 @@ readonly DESKTOP_ENTRY="$DESKTOP_DIR/Merekai Presenter Control Panel.desktop"
 readonly AUTOSTART_ENTRY="$SERVICE_HOME/.config/autostart/merekai-player.desktop"
 
 log "Installing the Merekai server service"
+if [[ "$update_mode" == true ]]; then
+    # Replace the previous unit completely so removed or changed settings do not linger.
+    sudo systemctl disable --now merekai-presenter.service >/dev/null 2>&1 || true
+    sudo rm -f /etc/systemd/system/merekai-presenter.service
+fi
+
 sudo tee /etc/systemd/system/merekai-presenter.service >/dev/null <<EOF
 [Unit]
 Description=Merekai Presenter server
@@ -123,7 +127,6 @@ EOF
 mkdir -p \
     "$(dirname "$PANEL_LAUNCHER")" \
     "$(dirname "$PLAYER_LOG")" \
-    "$(dirname "$PLAYER_SERVICE")" \
     "$(dirname "$APPLICATION_ENTRY")" \
     "$(dirname "$APPLICATION_ICON")" \
     "$DESKTOP_DIR" \
@@ -183,27 +186,6 @@ exec "$CHROMIUM_COMMAND" \
 EOF
 chmod +x "$PLAYER_LAUNCHER"
 
-if [[ "$DESKTOP_ENVIRONMENT" == *GNOME* ]]; then
-    cat > "$PLAYER_SERVICE" <<EOF
-[Unit]
-Description=Merekai Presenter Chromium player
-PartOf=graphical-session.target
-After=graphical-session.target
-
-[Service]
-Type=simple
-ExecStart=$PLAYER_LAUNCHER
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=graphical-session.target
-EOF
-    rm -f "$AUTOSTART_ENTRY"
-else
-    rm -f "$PLAYER_SERVICE"
-fi
-
 cat > "$APPLICATION_ENTRY" <<EOF
 [Desktop Entry]
 Type=Application
@@ -218,8 +200,7 @@ EOF
 cp "$APPLICATION_ENTRY" "$DESKTOP_ENTRY"
 chmod +x "$APPLICATION_ENTRY" "$DESKTOP_ENTRY"
 
-if [[ "$DESKTOP_ENVIRONMENT" != *GNOME* ]]; then
-    cat > "$AUTOSTART_ENTRY" <<EOF
+cat > "$AUTOSTART_ENTRY" <<EOF
 [Desktop Entry]
 Type=Application
 Name=Merekai Presenter Player
@@ -233,34 +214,31 @@ StartupNotify=false
 X-GNOME-Autostart-enabled=true
 X-GNOME-Autostart-Delay=5
 EOF
-    chmod +x "$AUTOSTART_ENTRY"
-fi
+chmod +x "$AUTOSTART_ENTRY"
 touch "$PLAYER_LOG"
 
-chown_paths=( \
+# Remove the older GNOME user-service launcher so only XDG autostart runs Chromium.
+if [[ -f "$SERVICE_HOME/.config/systemd/user/merekai-player.service" ]]; then
+    systemctl --user disable --now merekai-player.service >/dev/null 2>&1 || true
+    rm -f "$SERVICE_HOME/.config/systemd/user/merekai-player.service"
+    systemctl --user daemon-reload >/dev/null 2>&1 || true
+fi
+
+sudo chown \
     "$SERVICE_USER":"$(id -gn "$SERVICE_USER")" \
     "$PANEL_LAUNCHER" \
     "$PLAYER_LAUNCHER" \
     "$PLAYER_LOG" \
     "$APPLICATION_ENTRY" \
     "$DESKTOP_ENTRY" \
-)
-if [[ "$DESKTOP_ENVIRONMENT" == *GNOME* ]]; then
-    chown_paths+=( "$PLAYER_SERVICE" )
-else
-    chown_paths+=( "$AUTOSTART_ENTRY" )
-fi
-sudo chown "${chown_paths[@]}"
+    "$AUTOSTART_ENTRY"
 
 sudo systemctl daemon-reload
-if [[ "$DESKTOP_ENVIRONMENT" == *GNOME* ]]; then
-    systemctl --user daemon-reload
-    systemctl --user enable merekai-player.service
-fi
+sudo systemctl enable merekai-presenter.service
 if [[ "$update_mode" == true ]]; then
     sudo systemctl restart merekai-presenter.service
 else
-    sudo systemctl enable --now merekai-presenter.service
+    sudo systemctl start merekai-presenter.service
 fi
 
 printf '\nMerekai Presenter is installed.\n'

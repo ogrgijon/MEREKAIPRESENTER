@@ -8,7 +8,6 @@ readonly SERVICE_HOME="$(getent passwd "$SERVICE_USER" | cut -d: -f6)"
 readonly PANEL_URL="http://127.0.0.1:3131/"
 readonly PLAYER_URL="http://127.0.0.1:3131/player/"
 readonly PLAYER_LAUNCHER="$SERVICE_HOME/.local/bin/merekai-player"
-readonly PLAYER_SERVICE="$SERVICE_HOME/.config/systemd/user/merekai-player.service"
 readonly AUTOSTART_ENTRY="$SERVICE_HOME/.config/autostart/merekai-player.desktop"
 readonly PLAYER_LOG="$SERVICE_HOME/.local/state/merekaipresenter/player-autostart.log"
 
@@ -48,12 +47,7 @@ fi
 
 check_file "$PLAYER_LAUNCHER" "Player launcher"
 check_file "$PLAYER_LOG" "Player log"
-
-if [[ "${XDG_CURRENT_DESKTOP:-${DESKTOP_SESSION:-}}" == *GNOME* ]]; then
-    check_file "$PLAYER_SERVICE" "GNOME player service"
-else
-    check_file "$AUTOSTART_ENTRY" "Desktop autostart entry"
-fi
+check_file "$AUTOSTART_ENTRY" "Desktop autostart entry"
 
 if [[ -x "$PLAYER_LAUNCHER" ]]; then
     ok "Player launcher is executable"
@@ -70,14 +64,6 @@ if [[ -f "$AUTOSTART_ENTRY" ]]; then
         ok "Autostart entry points to the player launcher"
     else
         warn "Autostart entry does not point to $PLAYER_LAUNCHER"
-    fi
-fi
-
-if [[ -f "$PLAYER_SERVICE" ]] && command -v systemctl >/dev/null 2>&1; then
-    if systemctl --user is-enabled --quiet merekai-player.service; then
-        ok "GNOME player service is enabled"
-    else
-        warn "GNOME player service is not enabled"
     fi
 fi
 

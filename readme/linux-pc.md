@@ -55,10 +55,9 @@ autostart entry.
 It installs the Debian packages, builds the application, creates the
 `systemd` service, places a **Merekai Presenter Control Panel** shortcut in the
 desktop and application menu, and registers the fullscreen player in the
-desktop session's autostart. GNOME uses a per-user systemd service attached to
-`graphical-session.target`; other supported desktops use XDG autostart. The
-server starts at boot and the player waits for it before opening Chromium in
-kiosk mode. A graphical user session must still
+desktop session's XDG autostart. This lets GNOME pass the active graphical
+session environment to Chromium. The server starts at boot and the player
+waits for it before opening Chromium in kiosk mode. A graphical user session must still
 be available; configure desktop autologin separately if the PC must start
 without manual sign-in. The manual steps below explain the same setup when you
 need to customize it.
@@ -69,7 +68,9 @@ and control panel remain available.
 
 To update an existing installation, run this from the repository root. It
 performs a fast-forward Git update, reinstalls dependencies, rebuilds the
-application, and restarts the service:
+application, removes and replaces the old server service, refreshes the
+autostart files, and restarts the service. Log out and back in afterward to
+test the refreshed GNOME autostart entry:
 
 ```bash
 bash scripts/install-linux-pc.sh --update
@@ -180,8 +181,11 @@ cat > /home/<linux-user>/.config/autostart/merekai-player.desktop <<'EOF'
 Type=Application
 Name=Merekai Presenter Player
 Exec=/home/<linux-user>/.local/bin/merekai-player
+TryExec=/home/<linux-user>/.local/bin/merekai-player
 Terminal=false
+StartupNotify=false
 X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=5
 EOF
 ```
 
