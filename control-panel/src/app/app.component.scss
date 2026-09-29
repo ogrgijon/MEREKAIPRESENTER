@@ -200,28 +200,46 @@
 
 @media (max-width: 900px) {
   .app-toolbar {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: clamp(0.6rem, 2vw, 1.5rem);
     padding-block: 0.7rem;
   }
 
   .brand-lockup {
     margin-right: auto;
+    min-width: 0;
     flex-basis: auto;
   }
 
   .transport-bar {
-    order: 3;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    flex: none;
     flex-wrap: wrap;
-    flex: 1 1 100%;
     justify-content: stretch;
   }
 
   .transport-button { flex: 1 1 0; }
 
-  .toolbar-actions { order: 1; }
+  .toolbar-actions {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .autostart-control {
+    min-width: 0;
+    flex: 0 1 auto;
+  }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .app-toolbar { gap: 0.6rem; padding-inline: 0.75rem; }
   .brand-mark { width: 44px; height: 44px; border-radius: 13px; }
   .brand-kicker { display: none; }
@@ -229,8 +247,11 @@
   .brand-subtitle { display: none; }
   .toolbar-actions { gap: 0.25rem; }
   .toolbar-actions button span { display: none; }
-  .autostart-control { padding-inline: 0.45rem; }
-  .autostart-control mat-slide-toggle { font-size: 0.6rem; }
+  .autostart-control {
+    padding-inline: 0.45rem;
+
+    .mdc-label { display: none; }
+  }
   .transport-button .transport-button-face { padding-inline: 0.3rem; font-size: 0.62rem; }
   .transport-button mat-icon { display: none; }
 }

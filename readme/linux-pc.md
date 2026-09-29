@@ -189,6 +189,19 @@ To exit kiosk mode during maintenance, press `Alt+F4`. Inspect the server with:
 journalctl -u merekai-presenter.service -f
 ```
 
+If the player does not open after signing in, verify the desktop entry and
+read the launcher log:
+
+```bash
+cat ~/.config/autostart/merekai-player.desktop
+cat ~/.local/state/merekaipresenter/player-autostart.log
+systemctl --user status
+systemctl status merekai-presenter.service
+```
+
+Run the installer with `--update` after changing the launcher or installing a
+new version so the generated autostart files are refreshed.
+
 ## 5. Verify and maintain the presenter
 
 1. Confirm Chromium opens the player fullscreen after login.

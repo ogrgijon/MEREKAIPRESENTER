@@ -84,6 +84,7 @@ npm run build
 readonly NPM_COMMAND="$(command -v npm)"
 readonly PANEL_LAUNCHER="$SERVICE_HOME/.local/bin/merekai-control-panel"
 readonly PLAYER_LAUNCHER="$SERVICE_HOME/.local/bin/merekai-player"
+readonly PLAYER_LOG="$SERVICE_HOME/.local/state/merekaipresenter/player-autostart.log"
 readonly APPLICATION_ENTRY="$SERVICE_HOME/.local/share/applications/merekai-control-panel.desktop"
 readonly DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || printf '%s/Desktop' "$SERVICE_HOME")"
 readonly DESKTOP_ENTRY="$DESKTOP_DIR/Merekai Presenter Control Panel.desktop"
@@ -112,6 +113,7 @@ EOF
 
 mkdir -p \
     "$(dirname "$PANEL_LAUNCHER")" \
+    "$(dirname "$PLAYER_LOG")" \
     "$(dirname "$APPLICATION_ENTRY")" \
     "$DESKTOP_DIR" \
     "$(dirname "$AUTOSTART_ENTRY")"
@@ -131,13 +133,22 @@ cat > "$PLAYER_LAUNCHER" <<EOF
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+exec >>"$PLAYER_LOG" 2>&1
+printf '\n[%s] Merekai player autostart\n' "\$(date --iso-8601=seconds)"
+
 until curl --fail --silent --max-time 2 "$PLAYER_URL" >/dev/null; do
     sleep 1
 done
 
-auto_start="$(curl --fail --silent --max-time 2 "$PANEL_URL/api/settings" | \
+settings_json="\$(curl --fail --silent --show-error --max-time 2 "$PANEL_URL/api/settings")"
+auto_start="\$(printf '%s' "\$settings_json" | \
     node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).autoStartPlayer === "true"')"
-[[ "$auto_start" == "true" ]] || exit 0
+if [[ "\$auto_start" != "true" ]]; then
+    printf '[%s] Auto-start disabled in the control panel\n' "\$(date --iso-8601=seconds)"
+    exit 0
+fi
+
+printf '[%s] Starting Chromium kiosk\n' "\$(date --iso-8601=seconds)"
 
 exec "$CHROMIUM_COMMAND" \
     --kiosk \
@@ -168,9 +179,23 @@ Type=Application
 Name=Merekai Presenter Player
 Comment=Start the Merekai Presenter player in fullscreen mode
 Exec=$PLAYER_LAUNCHER
+TryExec=$PLAYER_LAUNCHER
 Terminal=false
+StartupNotify=false
 X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=5
 EOF
+chmod +x "$AUTOSTART_ENTRY"
+touch "$PLAYER_LOG"
+
+sudo chown \
+    "$SERVICE_USER":"$(id -gn "$SERVICE_USER")" \
+    "$PANEL_LAUNCHER" \
+    "$PLAYER_LAUNCHER" \
+    "$PLAYER_LOG" \
+    "$APPLICATION_ENTRY" \
+    "$DESKTOP_ENTRY" \
+    "$AUTOSTART_ENTRY"
 
 sudo systemctl daemon-reload
 if [[ "$update_mode" == true ]]; then
