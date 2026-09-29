@@ -10,6 +10,13 @@ The commands below target Raspberry Pi OS Bookworm or newer with a desktop
 environment. Replace `<pi-user>` with the Linux username on the Pi. Do not use
 this setup on an untrusted network: the application has no authentication.
 
+**Disclaimer:** This wizard changes Debian packages, systemd services, network
+connections, display-manager settings, desktop autostart entries, and kiosk
+behavior. Review [the setup script](../scripts/setup-raspberry-pi.sh), keep
+backups, and test the complete setup before a public event. You are responsible
+for system recovery, media rights, hotspot passwords, firewall rules, physical
+access, and any data loss, downtime, or security exposure.
+
 For an interactive setup, run the included wizard from the repository root:
 
 ```bash
@@ -22,9 +29,25 @@ application settings, installs the server service, creates the Chromium kiosk
 autostart entry, and offers to enable desktop autologin and disable display
 blanking. It prints every active control-panel URL when it finishes.
 
-The wizard is safe to run again for updates. Before rebuilding, it removes the
-previous Merekai system service and kiosk launcher, then installs them again.
-The repository, media folder, and application settings database are preserved.
+The wizard can be run again to reapply the complete configuration. Before
+rebuilding, it removes the previous Merekai system service and kiosk launcher,
+then installs them again. The repository, media folder, and application
+settings database are preserved. For a normal software update, prefer the
+dedicated `--update` option below because it does not repeat the interactive
+network and kiosk configuration.
+
+For an existing installation, use the dedicated update option from the
+repository root. It pulls fast-forward changes, reinstalls dependencies,
+rebuilds the application, and restarts the existing service without asking for
+hotspot, media, or kiosk configuration again:
+
+```bash
+bash scripts/setup-raspberry-pi.sh --update
+```
+
+The option expects a clean Git checkout. If local changes or uncommitted files
+would prevent a fast-forward update, Git stops safely instead of overwriting
+them.
 
 ## 1. Install the Pi prerequisites
 

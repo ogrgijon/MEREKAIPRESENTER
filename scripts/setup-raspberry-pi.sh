@@ -10,6 +10,24 @@ readonly DEFAULT_CONNECTION="merekai-hotspot"
 
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly APP_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+update_mode=false
+
+case "${1:-}" in
+    "")
+        ;;
+    --update)
+        update_mode=true
+        ;;
+    --help|-h)
+        printf 'Usage: bash scripts/setup-raspberry-pi.sh [--update]\n'
+        printf '  --update  Pull fast-forward changes, rebuild, and restart the service.\n'
+        exit 0
+        ;;
+    *)
+        printf 'Unknown option: %s\n' "$1" >&2
+        exit 2
+        ;;
+esac
 
 log() {
     printf '\n==> %s\n' "$1"
@@ -472,6 +490,28 @@ node_major="$(node -p 'process.versions.node.split(".")[0]')"
 
 [[ "$node_major" -ge 20 ]] ||
     fail "Node.js 20 or newer is required; found $(node --version)."
+
+if [[ "$update_mode" == true ]]; then
+    [[ -d "$APP_DIR/.git" ]] || fail "The application directory is not a Git checkout."
+
+    log "Updating the application"
+    git -C "$APP_DIR" pull --ff-only
+
+    (
+        cd "$APP_DIR"
+        npm install
+        run_audit_fix
+        npm --prefix control-panel install
+        run_control_panel_audit_fix
+        npm run build
+    )
+
+    sudo systemctl restart merekai-presenter.service
+
+    printf '\nMerekai Presenter was updated.\n'
+    printf 'Check the service with: sudo systemctl status merekai-presenter.service\n'
+    exit 0
+fi
 
 # ---------------------------------------------------------------------------
 # Chromium

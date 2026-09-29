@@ -151,6 +151,24 @@ npm run build:renderer
 npm run build:panel
 ```
 
+## Installation and update scripts
+
+Run these commands from the repository root. Review each script before
+running it; the platform installers require administrator privileges through
+`sudo` or Windows PowerShell as appropriate.
+
+| Platform | Install | Update |
+| --- | --- | --- |
+| Debian or Ubuntu desktop | `bash scripts/install-linux-pc.sh` | `bash scripts/install-linux-pc.sh --update` |
+| Windows 10 or 11 | `powershell.exe -ExecutionPolicy Bypass -File .\scripts\install-windows-pc.ps1` | `powershell.exe -ExecutionPolicy Bypass -File .\scripts\install-windows-pc.ps1 -Update` |
+| Raspberry Pi OS | `bash scripts/setup-raspberry-pi.sh` | `bash scripts/setup-raspberry-pi.sh --update` |
+
+Update modes use `git pull --ff-only`, reinstall dependencies, rebuild the
+application, and restart the existing server. They stop if local Git changes
+prevent a fast-forward update. The Raspberry Pi installer also has an
+interactive full-configuration mode; use that when changing hotspot, display,
+autologin, or kiosk settings.
+
 ## Linux desktop PC
 
 To convert a Debian-based desktop PC into a dedicated presenter, follow the
@@ -181,13 +199,24 @@ folder, installs the server service, and creates Chromium kiosk autostart:
 bash scripts/setup-raspberry-pi.sh
 ```
 
+To update an existing installation without repeating the interactive setup:
+
+```bash
+bash scripts/setup-raspberry-pi.sh --update
+```
+
+The Linux and Windows installers also provide `--update` and `-Update`,
+respectively. All update modes require a clean Git checkout and use a
+fast-forward-only pull before reinstalling dependencies, rebuilding, and
+restarting the server.
+
 ## Project structure
 
 ```text
 src/main/       Node.js HTTP server, settings, and native dialogs
 src/renderer/   Fullscreen player
 control-panel/  Angular control panel
-scripts/        Build helpers
+scripts/        Installers, kiosk setup, and build helpers
 ```
 
 Application data is stored outside the repository in the operating system's
@@ -203,8 +232,21 @@ setting the `HOST` environment variable. The local-file API only serves media
 inside the configured media folder and accepts supported image/video types.
 
 Do not commit `.env` files, credentials, certificates, private keys, local
-databases, or logs. Internal working notes in `prompts/` and `readme/` are
-ignored by the repository's `.gitignore`.
+databases, or logs. Internal working notes in `prompts/` are ignored by the
+repository's `.gitignore`; published guides under `readme/` are tracked.
+
+## Disclaimer
+
+Merekai Presenter and its installation scripts are provided "as is", without
+warranty of availability, correctness, security, or fitness for a particular
+purpose. Run scripts only after reviewing them and only on equipment you
+control. The scripts can install packages, create or replace services and
+desktop startup entries, change firewall or network behavior, and start a
+browser in kiosk mode. You are responsible for backups, permissions, media
+licenses, firewall rules, credentials, physical access, and testing the
+complete setup before using it in a public presentation. The authors and
+contributors are not responsible for data loss, system damage, downtime,
+security exposure, or content displayed by the application.
 
 ## License
 

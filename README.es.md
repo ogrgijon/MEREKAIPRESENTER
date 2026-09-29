@@ -169,6 +169,25 @@ npm run build:renderer
 npm run build:panel
 ```
 
+## Scripts de instalación y actualización
+
+Ejecuta estos comandos desde la raíz del repositorio. Revisa cada script antes
+de ejecutarlo; los instaladores de cada plataforma requieren privilegios de
+administrador mediante `sudo` o PowerShell de Windows, según corresponda.
+
+| Plataforma | Instalación | Actualización |
+| --- | --- | --- |
+| Escritorio Debian o Ubuntu | `bash scripts/install-linux-pc.sh` | `bash scripts/install-linux-pc.sh --update` |
+| Windows 10 u 11 | `powershell.exe -ExecutionPolicy Bypass -File .\scripts\install-windows-pc.ps1` | `powershell.exe -ExecutionPolicy Bypass -File .\scripts\install-windows-pc.ps1 -Update` |
+| Raspberry Pi OS | `bash scripts/setup-raspberry-pi.sh` | `bash scripts/setup-raspberry-pi.sh --update` |
+
+Los modos de actualización usan `git pull --ff-only`, reinstalan dependencias,
+compilan la aplicación y reinician el servidor existente. Se detienen si los
+cambios locales de Git impiden una actualización de avance rápido. El
+instalador de Raspberry Pi también tiene un modo interactivo de configuración
+completa; úsalo para cambiar el hotspot, la pantalla, el inicio automático o el
+modo kiosco.
+
 ## PC Linux de escritorio
 
 Para convertir un PC de escritorio basado en Debian en un presentador
@@ -202,13 +221,25 @@ en modo kiosco:
 bash scripts/setup-raspberry-pi.sh
 ```
 
+Para actualizar una instalación existente sin repetir la configuración
+interactiva:
+
+```bash
+bash scripts/setup-raspberry-pi.sh --update
+```
+
+Los instaladores de Linux y Windows también ofrecen `--update` y `-Update`,
+respectivamente. Todas las actualizaciones requieren un repositorio Git limpio
+y usan una actualización de avance rápido antes de reinstalar dependencias,
+compilar y reiniciar el servidor.
+
 ## Estructura del proyecto
 
 ```text
 src/main/       Servidor HTTP de Node.js, configuración y diálogos nativos
 src/renderer/   Reproductor a pantalla completa
 control-panel/  Panel de control Angular
-scripts/        Herramientas de compilación
+scripts/        Instaladores, configuración kiosco y compilación
 ```
 
 Los datos de la aplicación se guardan fuera del repositorio, en la carpeta de
@@ -225,8 +256,22 @@ locales solo sirve medios dentro de la carpeta configurada y acepta tipos de
 imagen y vídeo compatibles.
 
 No subas archivos `.env`, credenciales, certificados, claves privadas, bases de
-datos locales ni registros. Las notas internas de trabajo de `prompts/` y
-`readme/` están excluidas por `.gitignore`.
+datos locales ni registros. Las notas internas de trabajo de `prompts/` están
+excluidas por `.gitignore`; las guías publicadas de `readme/` sí se incluyen.
+
+## Descargo de responsabilidad
+
+Merekai Presenter y sus scripts de instalación se proporcionan "tal cual", sin
+garantía de disponibilidad, corrección, seguridad o adecuación para un uso
+concreto. Revisa los scripts antes de ejecutarlos y utilízalos únicamente en
+equipos bajo tu control. Los scripts pueden instalar paquetes, crear o
+reemplazar servicios y entradas de inicio, modificar el comportamiento de la
+red o del cortafuegos y abrir un navegador en modo kiosco. Tú eres responsable
+de las copias de seguridad, permisos, licencias de los medios, reglas del
+cortafuegos, credenciales, acceso físico y pruebas completas antes de usar el
+sistema en una presentación pública. Los autores y colaboradores no se hacen
+responsables de pérdidas de datos, daños del sistema, interrupciones,
+exposiciones de seguridad ni del contenido mostrado por la aplicación.
 
 ## Licencia
 

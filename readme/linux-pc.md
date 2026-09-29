@@ -10,6 +10,13 @@ working Internet connection during installation. The application has no
 authentication, so keep the server on localhost unless remote control is
 intentional.
 
+**Disclaimer:** The installer changes the system package set, creates a
+`systemd` service, writes desktop startup entries, and builds application
+dependencies. Review [the installer script](../scripts/install-linux-pc.sh),
+keep backups, and test the complete setup before a public event. You are
+responsible for system recovery, media rights, firewall rules, physical access,
+and any data loss, downtime, or security exposure.
+
 ## 1. Install the prerequisites
 
 On Debian or Ubuntu, install the desktop browser, build tools, and Git:
@@ -34,6 +41,28 @@ node --version
 npm --version
 chromium --version
 ```
+
+For a quick installation from the repository root, run the included installer:
+
+```bash
+bash scripts/install-linux-pc.sh
+```
+
+It installs the Debian packages, builds the application, creates the
+`systemd` service, and places a **Merekai Presenter Control Panel** shortcut in
+the desktop and application menu. The service starts automatically at boot.
+The manual steps below explain the same setup when you need to customize it.
+
+To update an existing installation, run this from the repository root. It
+performs a fast-forward Git update, reinstalls dependencies, rebuilds the
+application, and restarts the service:
+
+```bash
+bash scripts/install-linux-pc.sh --update
+```
+
+The update requires a clean Git checkout. If local changes prevent a
+fast-forward update, Git stops without overwriting them.
 
 ## 2. Install and build Merekai Presenter
 
@@ -158,7 +187,8 @@ journalctl -u merekai-presenter.service -f
 2. Confirm the configured media folder is shown in **Settings**.
 3. Test play, pause, next, previous, overlays, and media ordering.
 
-To update the installation without removing media or settings:
+For a manual update without removing media or settings, use the following only
+when the installer script cannot be used:
 
 ```bash
 cd /home/<linux-user>/merekaipresenter

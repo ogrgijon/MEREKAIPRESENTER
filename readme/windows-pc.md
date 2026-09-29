@@ -9,6 +9,13 @@ the Windows user who will run the presentation. The application has no
 authentication, so keep the server on localhost unless remote control is
 intentional.
 
+**Disclaimer:** The installer changes local files, creates a desktop shortcut,
+starts a Node.js process, and can be configured to start software at sign-in.
+Review [the installer script](../scripts/install-windows-pc.ps1), keep backups,
+and test the complete setup before a public event. You are responsible for
+system recovery, media rights, firewall rules, physical access, and any data
+loss, downtime, or security exposure.
+
 ## 1. Install the prerequisites
 
 Install these components:
@@ -26,6 +33,29 @@ git --version
 ```
 
 The Node.js version must be 20 or newer.
+
+For a quick installation from the repository root, run the included installer:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\install-windows-pc.ps1
+```
+
+It installs the project dependencies, builds the application, and places a
+**Merekai Presenter Control Panel** shortcut on the Windows desktop. Opening
+the shortcut starts the local server when necessary and opens the panel in the
+default browser. The manual steps below explain the same setup when you need
+to customize it.
+
+To update an existing installation, run this from the repository root. It
+performs a fast-forward Git update, reinstalls dependencies, and rebuilds the
+application without removing settings or media:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\install-windows-pc.ps1 -Update
+```
+
+The update requires a clean Git checkout. If local changes prevent a
+fast-forward update, Git stops without overwriting them.
 
 ## 2. Install and build Merekai Presenter
 
@@ -157,7 +187,8 @@ in automatically only on a dedicated, physically controlled presentation PC.
 2. Confirm the configured media folder is shown in **Settings**.
 3. Test play, pause, next, previous, overlays, and media ordering.
 
-To update the installation without removing media or settings:
+For a manual update without removing media or settings, use the following only
+when the installer script cannot be used:
 
 ```powershell
 Set-Location $HOME\merekaipresenter
