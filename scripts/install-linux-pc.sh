@@ -7,7 +7,14 @@ readonly SERVICE_USER="${SUDO_USER:-${USER}}"
 readonly SERVICE_HOME="$(getent passwd "$SERVICE_USER" | cut -d: -f6)"
 readonly PANEL_URL="http://127.0.0.1:3131/"
 readonly PLAYER_URL="http://127.0.0.1:3131/player/"
+readonly DESKTOP_ENVIRONMENT="${XDG_CURRENT_DESKTOP:-${DESKTOP_SESSION:-}}"
 update_mode=false
+
+if [[ "$SERVICE_USER" == "root" ]]; then
+    printf 'Error: run this installer as the desktop user, not from a root shell.\n' >&2
+    printf 'Use: bash scripts/install-linux-pc.sh\n' >&2
+    exit 1
+fi
 
 case "${1:-}" in
     "")
@@ -85,6 +92,7 @@ readonly NPM_COMMAND="$(command -v npm)"
 readonly PANEL_LAUNCHER="$SERVICE_HOME/.local/bin/merekai-control-panel"
 readonly PLAYER_LAUNCHER="$SERVICE_HOME/.local/bin/merekai-player"
 readonly PLAYER_LOG="$SERVICE_HOME/.local/state/merekaipresenter/player-autostart.log"
+readonly PLAYER_SERVICE="$SERVICE_HOME/.config/systemd/user/merekai-player.service"
 readonly APPLICATION_ENTRY="$SERVICE_HOME/.local/share/applications/merekai-control-panel.desktop"
 readonly APPLICATION_ICON="$SERVICE_HOME/.local/share/icons/hicolor/256x256/apps/merekai-presenter.png"
 readonly DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || printf '%s/Desktop' "$SERVICE_HOME")"
@@ -115,6 +123,7 @@ EOF
 mkdir -p \
     "$(dirname "$PANEL_LAUNCHER")" \
     "$(dirname "$PLAYER_LOG")" \
+    "$(dirname "$PLAYER_SERVICE")" \
     "$(dirname "$APPLICATION_ENTRY")" \
     "$(dirname "$APPLICATION_ICON")" \
     "$DESKTOP_DIR" \
@@ -136,6 +145,9 @@ cat > "$PLAYER_LAUNCHER" <<EOF
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+readonly PROFILE_DIR="\$HOME/.config/merekaipresenter/chromium-profile"
+
+mkdir -p "\$(dirname "$PLAYER_LOG")" "\$PROFILE_DIR"
 exec >>"$PLAYER_LOG" 2>&1
 printf '\n[%s] Merekai player autostart\n' "\$(date --iso-8601=seconds)"
 
@@ -151,17 +163,46 @@ if [[ "\$auto_start" == "false" ]]; then
     exit 0
 fi
 
+# Avoid Chromium refusing to start because a previous kiosk process owns the profile.
+pkill -u "\$(id -u)" -f '[c]hromium.*127\\.0\\.0\\.1:3131/player/' \
+    >/dev/null 2>&1 || true
+sleep 1
+
 printf '[%s] Starting Chromium kiosk\n' "\$(date --iso-8601=seconds)"
 
 exec "$CHROMIUM_COMMAND" \
     --kiosk \
+    --start-fullscreen \
+    --noerrdialogs \
     --no-first-run \
     --disable-session-crashed-bubble \
     --disable-infobars \
-    --user-data-dir="\$HOME/.config/merekaipresenter/chromium-profile" \
+    --password-store=basic \
+    --user-data-dir="\$PROFILE_DIR" \
     "$PLAYER_URL"
 EOF
 chmod +x "$PLAYER_LAUNCHER"
+
+if [[ "$DESKTOP_ENVIRONMENT" == *GNOME* ]]; then
+    cat > "$PLAYER_SERVICE" <<EOF
+[Unit]
+Description=Merekai Presenter Chromium player
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=$PLAYER_LAUNCHER
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+    rm -f "$AUTOSTART_ENTRY"
+else
+    rm -f "$PLAYER_SERVICE"
+fi
 
 cat > "$APPLICATION_ENTRY" <<EOF
 [Desktop Entry]
@@ -177,7 +218,8 @@ EOF
 cp "$APPLICATION_ENTRY" "$DESKTOP_ENTRY"
 chmod +x "$APPLICATION_ENTRY" "$DESKTOP_ENTRY"
 
-cat > "$AUTOSTART_ENTRY" <<EOF
+if [[ "$DESKTOP_ENVIRONMENT" != *GNOME* ]]; then
+    cat > "$AUTOSTART_ENTRY" <<EOF
 [Desktop Entry]
 Type=Application
 Name=Merekai Presenter Player
@@ -185,23 +227,36 @@ Comment=Start the Merekai Presenter player in fullscreen mode
 Exec=$PLAYER_LAUNCHER
 TryExec=$PLAYER_LAUNCHER
 Terminal=false
+Hidden=false
+NoDisplay=false
 StartupNotify=false
 X-GNOME-Autostart-enabled=true
 X-GNOME-Autostart-Delay=5
 EOF
-chmod +x "$AUTOSTART_ENTRY"
+    chmod +x "$AUTOSTART_ENTRY"
+fi
 touch "$PLAYER_LOG"
 
-sudo chown \
+chown_paths=( \
     "$SERVICE_USER":"$(id -gn "$SERVICE_USER")" \
     "$PANEL_LAUNCHER" \
     "$PLAYER_LAUNCHER" \
     "$PLAYER_LOG" \
     "$APPLICATION_ENTRY" \
     "$DESKTOP_ENTRY" \
-    "$AUTOSTART_ENTRY"
+)
+if [[ "$DESKTOP_ENVIRONMENT" == *GNOME* ]]; then
+    chown_paths+=( "$PLAYER_SERVICE" )
+else
+    chown_paths+=( "$AUTOSTART_ENTRY" )
+fi
+sudo chown "${chown_paths[@]}"
 
 sudo systemctl daemon-reload
+if [[ "$DESKTOP_ENVIRONMENT" == *GNOME* ]]; then
+    systemctl --user daemon-reload
+    systemctl --user enable merekai-player.service
+fi
 if [[ "$update_mode" == true ]]; then
     sudo systemctl restart merekai-presenter.service
 else

@@ -48,11 +48,17 @@ For a quick installation from the repository root, run the included installer:
 bash scripts/install-linux-pc.sh
 ```
 
+Run this command as the normal desktop user. Do not start it from a root shell;
+the installer uses the logged-in user's home directory for the Chromium player
+autostart entry.
+
 It installs the Debian packages, builds the application, creates the
 `systemd` service, places a **Merekai Presenter Control Panel** shortcut in the
 desktop and application menu, and registers the fullscreen player in the
-desktop session's autostart. The server starts at boot and the player waits for
-it before opening Chromium in kiosk mode. A graphical user session must still
+desktop session's autostart. GNOME uses a per-user systemd service attached to
+`graphical-session.target`; other supported desktops use XDG autostart. The
+server starts at boot and the player waits for it before opening Chromium in
+kiosk mode. A graphical user session must still
 be available; configure desktop autologin separately if the PC must start
 without manual sign-in. The manual steps below explain the same setup when you
 need to customize it.
