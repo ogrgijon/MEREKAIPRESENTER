@@ -151,6 +151,20 @@ npm run build:renderer
 npm run build:panel
 ```
 
+## Linux desktop PC
+
+To convert a Debian-based desktop PC into a dedicated presenter, follow the
+[Linux PC presenter guide](readme/linux-pc.md). It covers Node.js and Chromium
+installation, a systemd server service, media setup, and automatic Chromium
+kiosk startup. It also applies to Ubuntu, Linux Mint, and similar distributions.
+
+## Windows desktop PC
+
+To convert a Windows 10 or Windows 11 PC into a dedicated presenter, follow
+the [Windows PC presenter guide](readme/windows-pc.md). It covers PowerShell
+setup, Node.js installation, media configuration, Edge or Chrome kiosk mode,
+and automatic startup when the Windows user signs in.
+
 ## Raspberry Pi player
 
 To turn a Raspberry Pi into a fullscreen player, see the [Raspberry Pi player

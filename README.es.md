@@ -169,6 +169,22 @@ npm run build:renderer
 npm run build:panel
 ```
 
+## PC Linux de escritorio
+
+Para convertir un PC de escritorio basado en Debian en un presentador
+dedicado, consulta la [guía del presentador para PC Linux](readme/linux-pc.md).
+Incluye la instalación de Node.js y Chromium, el servicio del servidor con
+systemd, la configuración de los medios y el inicio automático de Chromium en
+modo kiosco. También sirve para Ubuntu, Linux Mint y distribuciones similares.
+
+## PC Windows de escritorio
+
+Para convertir un PC con Windows 10 o Windows 11 en un presentador dedicado,
+consulta la [guía del presentador para PC Windows](readme/windows-pc.md).
+Incluye la configuración con PowerShell, la instalación de Node.js, la
+configuración de los medios, el modo kiosco de Edge o Chrome y el inicio
+automático al iniciar sesión en Windows.
+
 ## Reproductor en Raspberry Pi
 
 Para convertir una Raspberry Pi en un reproductor a pantalla completa con su
