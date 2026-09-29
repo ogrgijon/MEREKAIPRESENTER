@@ -295,9 +295,9 @@ while true; do
         --silent \
         --max-time 2 \
         "\$SETTINGS_URL" | \
-        node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).autoStartPlayer === "true"')"
+        node -p 'String(JSON.parse(require("fs").readFileSync(0, "utf8")).autoStartPlayer).trim().toLowerCase()')"
 
-    [[ "\$auto_start" == "true" ]] && break
+    [[ "\$auto_start" != "false" ]] && break
 
     printf '[%s] Player auto-start is disabled; waiting for the control-panel setting\\n' \
         "\$(date --iso-8601=seconds)"

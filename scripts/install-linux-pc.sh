@@ -145,8 +145,8 @@ done
 
 settings_json="\$(curl --fail --silent --show-error --max-time 2 "$PANEL_URL/api/settings")"
 auto_start="\$(printf '%s' "\$settings_json" | \
-    node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).autoStartPlayer === "true"')"
-if [[ "\$auto_start" != "true" ]]; then
+    node -p 'String(JSON.parse(require("fs").readFileSync(0, "utf8")).autoStartPlayer).trim().toLowerCase()')"
+if [[ "\$auto_start" == "false" ]]; then
     printf '[%s] Auto-start disabled in the control panel\n' "\$(date --iso-8601=seconds)"
     exit 0
 fi

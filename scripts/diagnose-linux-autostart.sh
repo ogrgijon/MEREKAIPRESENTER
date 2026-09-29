@@ -88,8 +88,8 @@ fi
 
 settings_json="$(curl --fail --silent --max-time 3 "$PANEL_URL/api/settings" 2>/dev/null || true)"
 if [[ -n "$settings_json" ]] && command -v node >/dev/null 2>&1; then
-    auto_start="$(printf '%s' "$settings_json" | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).autoStartPlayer')"
-    if [[ "$auto_start" == "true" ]]; then
+    auto_start="$(printf '%s' "$settings_json" | node -p 'String(JSON.parse(require("fs").readFileSync(0, "utf8")).autoStartPlayer).trim().toLowerCase()')"
+    if [[ "$auto_start" != "false" ]]; then
         ok "Auto-start preference is enabled"
     else
         warn "Auto-start preference is disabled: $auto_start"

@@ -114,7 +114,7 @@ if (-not $ready) {
 }
 
 $settings = Invoke-RestMethod -Uri "$panelUrl/api/settings"
-if ($settings.autoStartPlayer -ne "true") {
+if ([string]$settings.autoStartPlayer -and ([string]$settings.autoStartPlayer).Trim().ToLowerInvariant() -eq "false") {
     exit 0
 }
 
