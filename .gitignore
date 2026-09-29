@@ -10,6 +10,8 @@ out/
 !/readme/
 /readme/*
 !/readme/raspberry-pi.md
+!/readme/linux-pc.md
+!/readme/windows-pc.md
 
 # Local configuration and credentials
 .env
