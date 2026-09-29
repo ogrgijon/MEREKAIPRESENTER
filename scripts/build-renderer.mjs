@@ -7,7 +7,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 const sourceDir = path.join(rootDir, 'src', 'renderer');
-const iconPath = path.join(rootDir, 'iconoMerekaiGallery.png');
 const outputDir = path.join(rootDir, 'dist', 'renderer');
 
 mkdirSync(outputDir, { recursive: true });
@@ -31,4 +30,10 @@ for (const fileName of ['index.html', 'style.css']) {
   );
 }
 
-cpSync(iconPath, path.join(outputDir, 'iconoMerekaiGallery.png'), { force: true });
+for (const iconName of ['iconoMerekaiGallery.png', 'iconoMerekaiGallery.ico']) {
+  cpSync(
+    path.join(rootDir, iconName),
+    path.join(outputDir, iconName),
+    { force: true },
+  );
+}
